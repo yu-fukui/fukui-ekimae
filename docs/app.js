@@ -249,9 +249,13 @@
       ["エリア", `${ZONES[s.zone] || ""}${s.town ? "・" + s.town : ""}`],
       ["ジャンル", s.genre],
       ...(openedLabel(s) ? [["オープン", openedLabel(s).replace("オープン", "")]] : []),
+      // 空欄の項目は出さない。無料のお店の電話・定休日・住所は、出どころを確かめたものだけがビューから届く
       ...(s.is_paid && s.hours ? [["営業時間", s.hours]] : []),
-      ...(s.is_paid && s.holiday ? [["定休日", s.holiday]] : []),
-      ...(s.is_paid && s.tel ? [["電話", s.tel]] : []),
+      ...[["定休日", s.holiday], ["ラストオーダー", s.last_order], ["電話", s.tel], ["住所", s.address], ["アクセス", s.access],
+        ["席数", s.seats], ["コース", s.course], ["ランチ", s.lunch], ["予算（ランチ）", s.budget_lunch], ["予算（ディナー）", s.budget_dinner],
+        ["個室・貸切", s.private_room], ["予約", s.reservation], ["喫煙", s.smoking], ["支払い", s.payment],
+        ["おひとり様", s.solo_ok], ["お子さま連れ", s.kids_ok], ["テイクアウト", s.takeout]]
+        .filter(([, v]) => v && String(v).trim()),
     ];
     el.innerHTML = `
       <button class="back" type="button" data-back>${svg("back")}一覧にもどる</button>
@@ -270,8 +274,9 @@
           </div>
         </header>
         <div class="d-actions">
-          ${s.is_paid && s.tel ? `<a class="d-btn tel" href="tel:${esc(telHref(s.tel))}">${svg("tel")}<span><b>電話する</b><small>${esc(s.tel)}</small></span></a>` : ""}
+          ${s.tel ? `<a class="d-btn tel" href="tel:${esc(telHref(s.tel))}">${svg("tel")}<span><b>電話する</b><small>${esc(s.tel)}</small></span></a>` : ""}
           ${s.instagram ? `<a class="d-btn ig" href="${igUrl(s.instagram)}" target="_blank" rel="noopener">${svg("ig")}<span><b>Instagram</b><small>@${esc(s.instagram)}</small></span></a>` : ""}
+          ${s.reservation_url && /^https?:\/\//.test(s.reservation_url) ? `<a class="d-btn" href="${esc(s.reservation_url)}" target="_blank" rel="noopener">${svg("link")}<span><b>予約する</b><small>予約ページ</small></span></a>` : ""}
           <a class="d-btn" href="${mapUrl(s)}" target="_blank" rel="noopener">${svg("map")}<span><b>地図で見る</b><small>Googleマップ</small></span></a>
           ${links.map((l) => `<a class="d-btn" href="${esc(l.url)}" target="_blank" rel="noopener">${svg("link")}<span><b>${esc(l.label || LINK_LABEL[l.kind] || "リンク")}</b><small>${esc(LINK_LABEL[l.kind] || "")}</small></span></a>`).join("")}
         </div>
