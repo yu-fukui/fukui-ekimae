@@ -11,7 +11,7 @@
 
 文章は AI に書かせず、データにある事実（店名・ジャンル・エリア・公式アカウント・お店が書いた紹介文）だけで作る。
 公式 Instagram があるお店は @ で紐付ける（Threads は Instagram と同じユーザー名）。
-同じお店が続かないよう、紹介済みの記録を state/featured.json に残し、全店を一巡するまで同じ店は出さない。
+同じお店が続かないよう、紹介済みの記録を state/featured.json に残し（毎晩コミットする）、全店を一巡するまで同じ店は出さない。
 """
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import random
+import re
 import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -36,13 +37,40 @@ ZONES = {"ekimae": "福井駅前", "katamachi": "片町"}
 PR_INTERVAL_DAYS = 30   # 有料のお店は 30 日に 1 回紹介する
 
 
-def load_shops() -> list[dict]:
+CONFIG_JS = ROOT / "docs/config.js"
+
+
+def _supabase() -> tuple[str, str] | None:
+    """Supabase の URL と公開キー。Variables が無ければ docs/config.js（サイトと同じ公開の値）から読む。"""
     url, key = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_ANON_KEY")
     if url and key:
-        req = urllib.request.Request(f"{url}/rest/v1/public_shops?select=*",
-                                     headers={"apikey": key, "Authorization": f"Bearer {key}"})
-        with urllib.request.urlopen(req, timeout=30) as res:
-            return json.load(res)
+        return url, key
+    if CONFIG_JS.exists():
+        cfg = CONFIG_JS.read_text(encoding="utf-8")
+        u = re.search(r'supabaseUrl:\s*"([^"]+)"', cfg)
+        k = re.search(r'supabaseAnonKey:\s*"([^"]+)"', cfg)
+        if u and k:
+            return u.group(1), k.group(1)
+    return None
+
+
+def load_shops() -> list[dict]:
+    """いまサイトに出ているお店（public_shops）。読めないときだけ docs/data/shops.json（古い写し）を使う。"""
+    sb = _supabase()
+    if sb:
+        url, key = sb
+        out: list[dict] = []
+        try:
+            for offset in range(0, 10000, 1000):
+                req = urllib.request.Request(f"{url}/rest/v1/public_shops?select=*&order=slug&offset={offset}&limit=1000",
+                                             headers={"apikey": key, "Authorization": f"Bearer {key}"})
+                with urllib.request.urlopen(req, timeout=30) as res:
+                    page = json.load(res)
+                out += page
+                if len(page) < 1000:
+                    return out
+        except OSError as e:
+            print(f"::warning::Supabase から読めませんでした（{e}）。古い写しを使います。")
     return json.loads(LOCAL_DATA.read_text(encoding="utf-8"))
 
 
@@ -55,6 +83,9 @@ def shop_url(shop: dict) -> str:
 
 
 def mention(shop: dict) -> str:
+    # 複数店舗の共通アカウント（チェーン・本部）は紐付けない（代表の指示 2026-10-04）
+    if shop.get("instagram_shared"):
+        return ""
     return f"@{shop['instagram']}" if shop.get("instagram") else ""
 
 
@@ -97,23 +128,28 @@ def pr_text(shop: dict) -> str:
 
 
 def pick(pool: list[dict], seen: set[str], rng: random.Random) -> dict | None:
-    """まだ紹介していない店から選ぶ。Instagram のある店を優先。一巡したら記録を消してやり直す。"""
+    """まだ紹介していない店から選ぶ。共通アカウントでない店を優先し、共通アカウントの店は後回し。一巡したら記録を消してやり直す。"""
     if not pool:
         return None
     fresh = [s for s in pool if s["slug"] not in seen]
     if not fresh:
         seen.difference_update(s["slug"] for s in pool)
         fresh = pool
-    with_ig = [s for s in fresh if s.get("instagram")]
-    return rng.choice(with_ig or fresh)
+    own = [s for s in fresh if not s.get("instagram_shared")]
+    return rng.choice(own or fresh)
+
+
+def eligible(shop: dict) -> bool:
+    """無料の枠で紹介してよい店：Instagram がある店だけ（代表が Instagram を確認済み。2026-10-04 の指示）。"""
+    return bool((shop.get("instagram") or "").strip()) and not shop.get("is_paid")
 
 
 def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     rng = random.Random(day.isoformat())
     seen = set(featured.get("seen", []))
     pr_last = featured.get("pr_last", {})
-    gourmet = [s for s in shops if s["category"] == "gourmet" and not s.get("is_paid")]
-    night = [s for s in shops if s["category"] == "night" and not s.get("is_paid")]
+    gourmet = [s for s in shops if s["category"] == "gourmet" and eligible(s)]
+    night = [s for s in shops if s["category"] == "night" and eligible(s)]
     paid_due = sorted(
         (s for s in shops if s.get("is_paid") and
          (s["slug"] not in pr_last or (day - date.fromisoformat(pr_last[s["slug"]])).days >= PR_INTERVAL_DAYS)),

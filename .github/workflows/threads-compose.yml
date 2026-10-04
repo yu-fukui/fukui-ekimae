@@ -40,5 +40,7 @@ jobs:
         run: python -m threads_bot validate
       - name: コミットする
         run: |
+          # 初回は記録ファイルが未追跡で差分に出ないので、-N で追跡に入れてからコミットする
+          git add -N state/featured.json 2>/dev/null || true
           ./scripts/commit_file.sh state/featured.json "chore: 紹介済みの記録を更新" || true
           ./scripts/commit_file.sh posts/queue.jsonl "chore(queue): 翌日ぶんを追加"
