@@ -18,7 +18,8 @@ class ComposeTest(unittest.TestCase):
         shops = [shop("a", instagram="a_official"), shop("b", genre="居酒屋", instagram="b_ig"), shop("n", "night", "バー", instagram="n_bar")]
         items = compose.compose(date(2026, 10, 10), shops, {"seen": [], "pr_last": {}})
         self.assertEqual([i["scheduled_at"][11:16] for i in items], ["11:30", "17:30", "20:30"])
-        self.assertIn("@a_official", items[0]["text"])
+        self.assertIn("https://www.instagram.com/a_official/", items[0]["text"])
+        self.assertNotIn("@a_official", items[0]["text"])
         self.assertIn("20歳未満", items[2]["text"])
 
     def test_paid_shop_gets_pr_once_per_30_days(self):
@@ -53,7 +54,13 @@ class ComposeTest(unittest.TestCase):
         self.assertIn("店own", first)
         second = compose.compose(date(2026, 10, 2), shops, featured)[0]["text"]
         self.assertIn("店chain", second)
-        self.assertNotIn("@chain_hq", second)
+        self.assertNotIn("chain_hq", second)
+
+    def test_izakaya_not_in_lunch(self):
+        shops = [shop("iz", genre="居酒屋", instagram="iz_ig"), shop("wa", instagram="wa_ig"), shop("n", "night", "バー", instagram="n_ig")]
+        for d in range(1, 6):
+            items = compose.compose(date(2026, 10, d), shops, {"seen": [], "pr_last": {}})
+            self.assertNotIn("店iz", items[0]["text"])
 
 
 if __name__ == "__main__":
