@@ -30,7 +30,8 @@ QUEUE = ROOT / "posts/queue.jsonl"
 FEATURED = ROOT / "state/featured.json"
 LOCAL_DATA = ROOT / "docs/data/shops.json"
 TZ = ZoneInfo("Asia/Tokyo")
-SITE = os.environ.get("SITE_URL", "https://ekimae.fukui-fukui.com/").rstrip("/") + "/"
+# ワークフローでは vars.SITE_URL が未設定だと空文字で渡ってくるので、空でも既定の URL にする
+SITE = (os.environ.get("SITE_URL") or "https://ekimae.fukui-fukui.com/").rstrip("/") + "/"
 ZONES = {"ekimae": "福井駅前", "katamachi": "片町"}
 PR_INTERVAL_DAYS = 30   # 有料のお店は 30 日に 1 回紹介する
 
