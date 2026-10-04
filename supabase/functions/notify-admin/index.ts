@@ -25,14 +25,14 @@ export async function compose(p: Payload, shopName: Deps["shopName"]): Promise<M
   if (p.type !== "INSERT") return null;
   if (p.table === "inquiries") {
     return {
-      subject: `【ふくふく】お問い合わせ：${r.shop_name}`,
+      subject: `【ふくいエキマエ】お問い合わせ：${r.shop_name}`,
       text: `サイトからお問い合わせが届きました。\n\n店名：${r.shop_name}\n連絡先：${r.contact}\n\n${r.message || "（本文なし）"}\n\n管理画面：${ADMIN_URL()}`,
     };
   }
   if (p.table === "update_requests") {
     const name = await shopName(String(r.shop_id));
     return {
-      subject: `【ふくふく】情報の更新依頼：${name}`,
+      subject: `【ふくいエキマエ】情報の更新依頼：${name}`,
       text: `無料掲載のお店から、情報の更新依頼が届きました。\n\n店名：${name}\n\n${r.body}\n\n管理画面：${ADMIN_URL()}`,
     };
   }
@@ -56,7 +56,7 @@ async function sendWithResend(mail: Mail) {
     method: "POST",
     headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: Deno.env.get("NOTIFY_FROM") ?? "ふくふく <onboarding@resend.dev>",
+      from: Deno.env.get("NOTIFY_FROM") ?? "ふくいエキマエ <onboarding@resend.dev>",
       to: (Deno.env.get("NOTIFY_TO") ?? "yasu29fr@gmail.com").split(",").map((s) => s.trim()),
       subject: mail.subject, text: mail.text,
     }),

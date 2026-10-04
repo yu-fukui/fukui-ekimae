@@ -46,7 +46,7 @@ def load_shops() -> list[dict]:
 
 def render(shops: list[dict]) -> str:
     kata = [s for s in shops if s.get("zone") == "katamachi" and s.get("category", "night") == "night"]
-    out = [MARK[0], f"<p>ふくふくに載っている片町のお店は、いま{len(kata)}軒です。店名を押すと、お店のページが開きます。</p>"]
+    out = [MARK[0], f"<p>ふくいエキマエに載っている片町のお店は、いま{len(kata)}軒です。店名を押すと、お店のページが開きます。</p>"]
     for g in GENRES:
         its = sorted((s for s in kata if s.get("genre") == g), key=lambda s: s.get("kana") or s["name"])
         if not its:

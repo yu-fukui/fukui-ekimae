@@ -1,4 +1,4 @@
-# ふくふく｜福井エキマエ
+# ふくいエキマエ
 
 福井駅前・片町のグルメと夜のお店（バー・スナック・ラウンジ）のガイドサイトと、Threads **@fukui_ekimae** の運用の仕組みです。
 
@@ -60,7 +60,7 @@
    - Site URL：`https://ekimae.fukui-fukui.com/`
    - Redirect URLs：`https://ekimae.fukui-fukui.com/owner/` と `https://ekimae.fukui-fukui.com/admin/`
 5. Authentication → Emails：**SMTP を設定する**（Resend・Gmail など）。Supabase 標準のメール送信は1時間に数通までしか送れず、招待メールが届かなくなる。
-   メールの文面（Invite user / Magic link）は日本語に書き換える。例：件名「ふくふく｜福井エキマエ お店の管理画面へのご招待」。
+   メールの文面（Invite user / Magic link）は日本語に書き換える。例：件名「ふくいエキマエ お店の管理画面へのご招待」。
 6. Authentication → Users → Add user → Create new user で、運営者（`admins` 表のアドレス）を作る。
    「Auto Confirm User」にチェック。パスワードは使わないので長いランダムな文字列でよい。
    （新規登録をオフにしているので、ここで作っておかないとログイン用のメールが送れない）
@@ -92,7 +92,7 @@ Stripe のキーを入れるまでは、管理画面の申し込みボタンは�
 ```bash
 supabase functions deploy notify-admin --no-verify-jwt
 supabase secrets set RESEND_API_KEY=re_... NOTIFY_TO=yasu29fr@gmail.com \
-  NOTIFY_FROM="ふくふく <info@送信に使うドメイン>" NOTIFY_WEBHOOK_SECRET=<長いランダムな文字列>
+  NOTIFY_FROM="ふくいエキマエ <info@送信に使うドメイン>" NOTIFY_WEBHOOK_SECRET=<長いランダムな文字列>
 ```
 
 1. [Resend](https://resend.com) の API キーを使う（Auth の SMTP を Resend にしているなら同じキーでよい）。
