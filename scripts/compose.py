@@ -83,10 +83,12 @@ def shop_url(shop: dict) -> str:
 
 
 def mention(shop: dict) -> str:
+    """お店の Instagram へのリンク。@ のメンションではなく URL にする（代表の指示 2026-10-04）。"""
     # 複数店舗の共通アカウント（チェーン・本部）は紐付けない（代表の指示 2026-10-04）
     if shop.get("instagram_shared"):
         return ""
-    return f"@{shop['instagram']}" if shop.get("instagram") else ""
+    ig = (shop.get("instagram") or "").strip().lstrip("@")
+    return f"https://www.instagram.com/{ig}/" if ig else ""
 
 
 def where(shop: dict) -> str:
@@ -97,7 +99,7 @@ def where(shop: dict) -> str:
 def lunch_text(shop: dict) -> str:
     lines = [f"きょうのお昼、{where(shop)}で。", "", f"🍴 {shop['name']}", f"{shop['genre']}"]
     if mention(shop):
-        lines += ["", f"最新の営業日やメニューは公式で → {mention(shop)}"]
+        lines += ["", f"最新の営業日やメニューは公式 Instagram で\n{mention(shop)}"]
     lines += ["", f"お店の場所・ほかのお店は「ふくいエキマエ」で {shop_url(shop)}"]
     return "\n".join(lines)
 
@@ -105,7 +107,7 @@ def lunch_text(shop: dict) -> str:
 def night_text(shop: dict) -> str:
     lines = [f"今夜の二軒目、{where(shop)}で。", "", f"🍸 {shop['name']}", f"{shop['genre']}"]
     if mention(shop):
-        lines += ["", f"営業日・イベントは公式で → {mention(shop)}"]
+        lines += ["", f"営業日・イベントは公式 Instagram で\n{mention(shop)}"]
     lines += ["", f"夜のお店一覧 {shop_url(shop)}", "", "※20歳未満の飲酒は法律で禁止されています"]
     return "\n".join(lines)
 
@@ -120,7 +122,7 @@ def pr_text(shop: dict) -> str:
     if shop.get("hours"):
         lines += ["", f"🕒 {shop['hours']}" + (f"（定休日：{shop['holiday']}）" if shop.get("holiday") else "")]
     if mention(shop):
-        lines += [f"公式 → {mention(shop)}"]
+        lines += [f"公式 Instagram {mention(shop)}"]
     lines += ["", f"写真・詳しくは {shop_url(shop)}"]
     if shop.get("category") == "night":
         lines += ["", "※20歳未満の飲酒は法律で禁止されています"]
@@ -156,7 +158,9 @@ def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
         key=lambda s: pr_last.get(s["slug"], ""))
 
     slots: list[tuple[str, str]] = []
-    if (s := pick([x for x in gourmet if x["genre"] != "カフェ・スイーツ"] or gourmet, seen, rng)):
+    # お昼の枠に居酒屋は出さない（夜だけの店が多い。10/5 しの﨑の件）
+    lunch = [x for x in gourmet if x["genre"] not in ("カフェ・スイーツ", "居酒屋", "焼鳥・串")]
+    if (s := pick(lunch or gourmet, seen, rng)):
         seen.add(s["slug"]); slots.append(("11:30", lunch_text(s)))
     if paid_due:
         s = paid_due[0]; pr_last[s["slug"]] = day.isoformat(); slots.append(("17:30", pr_text(s)))
