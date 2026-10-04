@@ -3,6 +3,6 @@
 window.FUKUFUKU_CONFIG = {
   supabaseUrl: "https://zynxnpwwmrxzyljrsmbs.supabase.co",
   supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5bnhucHd3bXJ4enlsanJzbWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5Njg0ODAsImV4cCI6MjEwNjU0NDQ4MH0.IWnmhR-h5IxOqUbd_ukp7mfReXY1sNGpBwEOkTyUc9s",
-  siteName: "ふくふく｜福井エキマエ",
+  siteName: "ふくいエキマエ",
   threads: "fukui_ekimae",
 };

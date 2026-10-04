@@ -67,7 +67,7 @@ def lunch_text(shop: dict) -> str:
     lines = [f"きょうのお昼、{where(shop)}で。", "", f"🍴 {shop['name']}", f"{shop['genre']}"]
     if mention(shop):
         lines += ["", f"最新の営業日やメニューは公式で → {mention(shop)}"]
-    lines += ["", f"お店の場所・ほかのお店は「ふくふく」で {shop_url(shop)}"]
+    lines += ["", f"お店の場所・ほかのお店は「ふくいエキマエ」で {shop_url(shop)}"]
     return "\n".join(lines)
 
 

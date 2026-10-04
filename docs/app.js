@@ -1,4 +1,4 @@
-// ふくふく｜福井エキマエ — 公開サイト
+// ふくいエキマエ — 公開サイト
 // データは Supabase の public_shops ビュー（未設定なら data/shops.json）。ログインは不要。
 (() => {
   const cfg = window.FUKUFUKU_CONFIG || {};
@@ -296,7 +296,7 @@
       </section>` : ""}`;
     $("#app").hidden = true;
     el.hidden = false;
-    document.title = `${s.name}｜ふくふく 福井エキマエ`;
+    document.title = `${s.name}｜ふくいエキマエ`;
     window.scrollTo(0, 0);
     const slides = $("#d-slides");
     if (slides) {
@@ -313,7 +313,7 @@
     if (m) return renderDetail(decodeURIComponent(m[1]));
     $("#detail").hidden = true;
     $("#app").hidden = false;
-    document.title = "福井駅前・片町のランチ・居酒屋とバー・スナック｜ふくふく 福井エキマエ";
+    document.title = "福井駅前・片町のランチ・居酒屋とバー・スナック｜ふくいエキマエ";
     renderList();
   }
 
