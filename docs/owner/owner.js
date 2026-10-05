@@ -143,6 +143,26 @@ function bindUpgrade(shop) {
   }));
 }
 
+// 詳しい情報（空欄はお店のページに出ない）
+const DETAIL_FIELDS = [
+  ["website", "公式ホームページ", "https://", 200, "url"],
+  ["access", "アクセス", "例：福井駅西口から徒歩3分", 100],
+  ["seats", "席数", "例：24席（カウンター8席）", 60],
+  ["private_room", "個室・貸切", "例：個室あり（4名まで）・20名から貸切可", 100],
+  ["reservation", "予約", "例：予約可・当日予約OK", 60],
+  ["reservation_url", "予約ページの URL", "https://", 300, "url"],
+  ["lunch", "ランチ", "例：あり（11:30〜14:00）", 60],
+  ["budget_lunch", "予算（昼）", "例：1,000円", 30],
+  ["budget_dinner", "予算（夜）", "例：4,000円", 30],
+  ["course", "コース", "例：3,000円〜（飲み放題付き 5,000円〜）", 100],
+  ["last_order", "ラストオーダー", "例：フード22:00 / ドリンク22:30", 60],
+  ["smoking", "喫煙", "例：全席禁煙", 60],
+  ["payment", "お支払い", "例：カード可・PayPay可", 100],
+  ["solo_ok", "おひとりさま", "例：一人飲み歓迎", 60],
+  ["kids_ok", "お子さま連れ", "例：お子さま連れOK", 60],
+  ["takeout", "テイクアウト", "例：お弁当あり", 60],
+];
+
 // ───────── 有料プラン ─────────
 async function renderPaid(body, shop, sub) {
   const [{ data: links }, { data: photos }] = await Promise.all([
@@ -159,9 +179,11 @@ async function renderPaid(body, shop, sub) {
         <label>定休日<input name="holiday" maxlength="100" value="${esc(shop.holiday)}" placeholder="例：日曜・祝日" /></label>
         <label>電話番号（お店のページに出ます。タップで電話がかかります。出したくないときは空に）<input name="tel" type="tel" maxlength="20" value="${esc(shop.tel)}" placeholder="例：0776-00-0000" /></label>
         <label>Instagram（@ のあと）<input name="instagram" maxlength="30" pattern="[A-Za-z0-9_.]*" value="${esc(shop.instagram)}" /></label>
+        <h3 style="margin:18px 0 4px">詳しい情報 <small class="muted">（空欄の項目はお店のページに出ません）</small></h3>
+        ${DETAIL_FIELDS.map(([k, label, ph, max, type]) => `<label>${label}<input name="${k}" maxlength="${max}" ${type === "url" ? 'type="url" pattern="https?://.*"' : ""} value="${esc(shop[k] || "")}" placeholder="${esc(ph)}" /></label>`).join("")}
         <button class="btn" type="submit">保存する</button>
       </form>
-      <p class="muted small">店名・エリア・ジャンルを変えたいときは、運営にご連絡ください。</p>
+      <p class="muted small">店名・エリア・ジャンル・住所を変えたいときは、運営にご連絡ください。</p>
     </section>
 
     <section class="panel">
@@ -217,6 +239,7 @@ async function renderPaid(body, shop, sub) {
     const { error } = await sb.from("shops").update({
       catch: f.catch.value.trim(), description: f.description.value.trim(), hours: f.hours.value.trim(),
       holiday: f.holiday.value.trim(), tel: f.tel.value.trim(), instagram: f.instagram.value.trim().replace(/^@/, ""),
+      ...Object.fromEntries(DETAIL_FIELDS.map(([k]) => [k, f[k].value.trim()])),
     }).eq("id", shop.id);
     error ? toast("保存できませんでした：" + error.message, "error") : (toast("保存しました。"), reload());
   });
