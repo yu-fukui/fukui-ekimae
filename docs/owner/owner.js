@@ -1,6 +1,6 @@
 // お店の管理画面（オーナー用）
 // 無料：更新依頼を送る / 有料：店の情報・写真（5枚）・リンク（10件）を直接編集
-import { sb, ready, cfg, $, esc, ZONES, PLANS, LINK_KINDS, photoUrl, isPaid, fmtDate, shrinkImage, callFn, toast, renderLogin, showWho } from "../lib/common.js?v=5";
+import { sb, ready, cfg, $, esc, ZONES, PLANS, LINK_KINDS, photoUrl, isPaid, fmtDate, shrinkImage, callFn, toast, renderLogin, showWho } from "../lib/common.js?v=6";
 
 const root = $("#root");
 const MAX_PHOTOS = 5, MAX_LINKS = 10;

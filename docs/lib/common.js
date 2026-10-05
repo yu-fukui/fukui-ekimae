@@ -73,55 +73,42 @@ export function toast(msg, kind = "") {
   clearTimeout(el._t); el._t = setTimeout(() => (el.className = "toast"), 3200);
 }
 
-// メールのリンクでログインする画面（招待済みの人だけ。新規登録はさせない）
+// ログイン画面（招待済みの人だけ。新規登録はさせない）
+// ふだんはメールアドレスとパスワード。パスワードを忘れた・まだ設定していない人は、下のリンクから「ログイン用のリンク」をメールで受け取る
 export function renderLogin(root, title) {
-  // ログインは 2 通り：メールで届くリンク（いつもどおり）と、パスワード（ログイン後に設定した人だけ）
-  let mode = "link";
+  let mode = "password";
   root.innerHTML = `
     <section class="panel narrow login-card">
       <div class="emblem-lg" aria-hidden="true">ふ</div>
       <p class="en">LOGIN</p>
       <h1>${esc(title)}</h1>
-      <div class="seg login-seg" role="group" aria-label="ログインの方法">
-        <button type="button" data-mode="link" aria-pressed="true">メールでリンク</button>
-        <button type="button" data-mode="password" aria-pressed="false">パスワード</button>
-      </div>
-      <div data-pane="link">
-        <p class="muted">登録済みのメールアドレスに、ログイン用のリンクをお送りします。パスワードはいりません。</p>
-        <div class="login-steps">
-          <div><b>01</b>アドレスを入力</div>
-          <div><b>02</b>メールを開く</div>
-          <div><b>03</b>リンクで入る</div>
-        </div>
-      </div>
-      <div data-pane="password" hidden>
-        <p class="muted">パスワードは、一度リンクでログインしたあと、右上のメールアドレスを押すと設定できます。<br>忘れたときは「メールでリンク」からログインして設定し直してください。</p>
-      </div>
+      <p class="muted" data-pane="link" hidden>登録済みのメールアドレスに、ログイン用のリンクをお送りします。<br>ログインしたあと、右上のメールアドレスを押すとパスワードを設定できます。</p>
       <form id="login-form">
         <label>メールアドレス<input type="email" name="email" required autocomplete="username" placeholder="shop@example.com" /></label>
-        <label data-pane="password" hidden>パスワード<input type="password" name="password" autocomplete="current-password" minlength="8" /></label>
-        <button class="btn" type="submit" id="login-btn">ログイン用のリンクを送る</button>
+        <label data-pane="password">パスワード<input type="password" name="password" required autocomplete="current-password" minlength="8" /></label>
+        <button class="btn" type="submit" id="login-btn">ログインする</button>
         <p class="form-msg" id="login-msg" role="status"></p>
       </form>
+      <p class="small" style="margin-top:4px"><a href="#" id="login-toggle">パスワードをお忘れの方・まだ設定していない方はこちら</a></p>
       <p class="muted small">掲載のお申し込み・メールアドレスの登録は、<a href="../#inquiry">お問い合わせ</a>から運営にご連絡ください。</p>
     </section>`;
-  const form = $("#login-form", root), msg = $("#login-msg", root);
-  $(".login-seg", root).addEventListener("click", (e) => {
-    const b = e.target.closest("[data-mode]"); if (!b) return;
-    mode = b.dataset.mode;
-    root.querySelectorAll(".login-seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  const form = $("#login-form", root), msg = $("#login-msg", root), toggle = $("#login-toggle", root);
+  const setMode = (m) => {
+    mode = m;
     root.querySelectorAll("[data-pane]").forEach((el) => { el.hidden = el.dataset.pane !== mode; });
     form.password.required = mode === "password";
     $("#login-btn", root).textContent = mode === "password" ? "ログインする" : "ログイン用のリンクを送る";
+    toggle.textContent = mode === "password" ? "パスワードをお忘れの方・まだ設定していない方はこちら" : "パスワードでログインする";
     msg.textContent = "";
-  });
+  };
+  toggle.addEventListener("click", (e) => { e.preventDefault(); setMode(mode === "password" ? "link" : "password"); });
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = form.email.value.trim();
     if (mode === "password") {
       msg.textContent = "確認しています…";
       const { error } = await sb.auth.signInWithPassword({ email, password: form.password.value });
-      msg.textContent = error ? "メールアドレスかパスワードが違います。パスワードを設定していない場合は「メールでリンク」をお使いください。" : "";
+      msg.textContent = error ? "メールアドレスかパスワードが違います。パスワードを忘れた・まだ設定していない場合は、下の「こちら」からログインしてください。" : "";
       return;
     }
     msg.textContent = "送信しています…";
@@ -131,7 +118,7 @@ export function renderLogin(root, title) {
     });
     msg.textContent = error
       ? "送れませんでした。登録済みのメールアドレスか、ご確認ください。"
-      : "メールを送りました。届いたリンクを押してください（数分かかることがあります）。";
+      : "メールを送りました。届いたリンクを押してください（数分かかることがあります。迷惑メールのフォルダもご確認ください）。";
   });
 }
 
