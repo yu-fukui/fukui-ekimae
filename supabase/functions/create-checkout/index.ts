@@ -23,6 +23,8 @@ Deno.serve(handle(async (req) => {
     ...(sub?.stripe_customer_id ? { customer: sub.stripe_customer_id } : { customer_email: user.email }),
     locale: "ja",
     allow_promotion_codes: true,
+    // Managed Payments（Stripe が販売者になる仕組み）は使わない。ふくふくプロジェクトが販売者として売る
+    ...({ managed_payments: { enabled: false } } as Record<string, unknown>),
     success_url: `${back}${sep}checkout=success&shop=${shop_id}`,
     cancel_url: `${back}${sep}checkout=cancel&shop=${shop_id}`,
   });
