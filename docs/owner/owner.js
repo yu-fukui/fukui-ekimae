@@ -66,7 +66,7 @@ async function render(shop) {
       </div>
       <div class="stats">
         <div><small>ご契約</small><b>${contracted ? esc(PLANS[shop.plan]) : "無料プラン"}</b>
-          ${contracted ? "" : '<button class="btn" data-plan="monthly" type="button" style="margin-top:8px;padding:8px 16px;font-size:.85rem">有料プランに申し込む</button>'}</div>
+          ${contracted ? "" : shop.is_hidden ? '<p class="muted small" style="margin:8px 0 0">サイトに掲載していないため、お申し込みはできません。運営にご連絡ください。</p>' : '<button class="btn" data-plan="monthly" type="button" style="margin-top:8px;padding:8px 16px;font-size:.85rem">有料プランに申し込む</button>'}</div>
         <div><small>次回の更新日</small><b>${contracted && nextDate ? fmtDate(nextDate) : "—"}</b></div>
         <a class="see" href="../${location.search.includes("demo") ? "?demo=1" : ""}#/shop/${encodeURIComponent(shop.slug)}" target="_blank" rel="noopener">公開ページを見る →</a>
       </div>
@@ -107,7 +107,7 @@ async function renderFree(body, shop) {
           <p style="white-space:pre-wrap;margin:6px 0 0">${esc(r.body)}</p>
           ${r.admin_note ? `<p class="muted small">運営より：${esc(r.admin_note)}</p>` : ""}</li>`).join("")}</ul>` : ""}
     </section>
-    ${shop.plan !== "free" && (!shop.plan_until || new Date(shop.plan_until) > new Date()) ? "" : upgradeSection(shop)}`;
+    ${shop.is_hidden || (shop.plan !== "free" && (!shop.plan_until || new Date(shop.plan_until) > new Date())) ? "" : upgradeSection(shop)}`;
   $("#req-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const { error } = await sb.from("update_requests").insert({ shop_id: shop.id, user_id: current.session.user.id, body: e.target.body.value.trim() });

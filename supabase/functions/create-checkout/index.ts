@@ -9,6 +9,8 @@ Deno.serve(handle(async (req) => {
   if (!price) throw new HttpError(plan === "yearly" || plan === "monthly" ? 503 : 400, "決済は準備中です（not configured）");
   const s = stripe();
 
+  const { data: shop } = await admin.from("shops").select("is_hidden").eq("id", shop_id).maybeSingle();
+  if (!shop || shop.is_hidden) throw new HttpError(403, "サイトに掲載していないお店は、お申し込みできません。運営にご連絡ください。");
   const { data: sub } = await admin.from("subscriptions").select("*").eq("shop_id", shop_id).maybeSingle();
   if (sub && ["active", "trialing", "past_due"].includes(sub.status)) throw new HttpError(409, "すでに有料プランのご契約があります");
 
