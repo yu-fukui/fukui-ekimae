@@ -47,6 +47,9 @@ async function render(shop) {
   const { shops } = current;
   const paid = isPaid(shop);
   const { data: sub } = await sb.from("subscriptions").select("*").eq("shop_id", shop.id).maybeSingle();
+  // 契約中か（サイトに非表示のお店でも、契約と解約の操作は見せる）
+  const contracted = shop.plan !== "free" && (!shop.plan_until || new Date(shop.plan_until) > new Date());
+  const nextDate = sub && ["active", "trialing", "past_due"].includes(sub.status) && sub.current_period_end ? sub.current_period_end : shop.plan_until;
   root.innerHTML = `
     ${shops.length > 1 ? `<section class="panel"><p class="small" style="margin:0 0 8px"><b>このメールアドレスで管理できるお店（${shops.length}店）</b>　押すと切り替わります</p>
       <div class="row" style="flex-wrap:wrap;gap:8px">${shops.map((s) => `<button type="button" class="${s.id === shop.id ? "btn" : "btn-ghost"}" data-shop="${s.id}" ${s.id === shop.id ? 'aria-current="true"' : ""}>${esc(s.name)}</button>`).join("")}</div></section>` : ""}
@@ -54,19 +57,20 @@ async function render(shop) {
       <div class="shop-hero">
         <div class="thumb" id="shop-thumb">${shop.category === "night" ? "🍸" : "🍴"}</div>
         <div style="min-width:0;flex:1">
-          <div class="row"><span class="badge ${paid ? "paid" : ""}">${paid ? PLANS[shop.plan] : "無料プラン"}</span>
+          <div class="row"><span class="badge ${contracted ? "paid" : ""}">${contracted ? PLANS[shop.plan] : "無料プラン"}</span>
+            ${shop.is_hidden ? '<span class="badge off">サイトに掲載していません</span>' : ""}
             ${sub && sub.status === "past_due" ? '<span class="badge warn">お支払いが確認できていません</span>' : ""}</div>
           <h1>${esc(shop.name)}</h1>
           <p class="muted">${esc(ZONES[shop.zone])}${shop.town ? "・" + esc(shop.town) : ""}　${esc(shop.genre)}</p>
         </div>
       </div>
       <div class="stats">
-        <div><small>ご契約</small><b>${paid ? esc(PLANS[shop.plan]) : "無料プラン"}</b>
-          ${paid ? "" : '<button class="btn" data-plan="monthly" type="button" style="margin-top:8px;padding:8px 16px;font-size:.85rem">有料プランに申し込む</button>'}</div>
-        <div><small>次回の更新日</small><b>${paid && shop.plan_until ? fmtDate(shop.plan_until) : "—"}</b></div>
+        <div><small>ご契約</small><b>${contracted ? esc(PLANS[shop.plan]) : "無料プラン"}</b>
+          ${contracted ? "" : '<button class="btn" data-plan="monthly" type="button" style="margin-top:8px;padding:8px 16px;font-size:.85rem">有料プランに申し込む</button>'}</div>
+        <div><small>次回の更新日</small><b>${contracted && nextDate ? fmtDate(nextDate) : "—"}</b></div>
         <a class="see" href="../${location.search.includes("demo") ? "?demo=1" : ""}#/shop/${encodeURIComponent(shop.slug)}" target="_blank" rel="noopener">公開ページを見る →</a>
       </div>
-      ${paid ? (sub ? '<p style="margin-top:10px"><button class="btn-ghost" id="portal" type="button">お支払い方法の変更・解約</button></p>' : '<p class="muted small" style="margin-top:10px">運営が設定した有料プランです。変更は運営にご連絡ください。</p>') : ""}
+      ${contracted ? (sub ? '<p style="margin-top:10px"><button class="btn-ghost" id="portal" type="button">お支払い方法の変更・解約</button></p>' : '<p class="muted small" style="margin-top:10px">運営が設定した有料プランです。変更は運営にご連絡ください。</p>') : ""}
     </section>
     <div id="body"></div>`;
   document.querySelectorAll("[data-shop]").forEach((btn) => btn.addEventListener("click", () => {
@@ -77,6 +81,10 @@ async function render(shop) {
   const body = $("#body");
   sb.from("shop_photos").select("path").eq("shop_id", shop.id).order("sort").limit(1).then(({ data }) => {
     if (paid && data?.[0]) $("#shop-thumb").style.backgroundImage = `url('${photoUrl(data[0].path)}')`, ($("#shop-thumb").textContent = "");
+  });
+  $("#portal")?.addEventListener("click", async () => {
+    try { location.href = (await callFn("customer-portal", { shop_id: shop.id, return_url: location.href })).url; }
+    catch (err) { toast("開けませんでした：" + err.message, "error"); }
   });
   if (paid) renderPaid(body, shop, sub);
   else renderFree(body, shop);
@@ -99,7 +107,7 @@ async function renderFree(body, shop) {
           <p style="white-space:pre-wrap;margin:6px 0 0">${esc(r.body)}</p>
           ${r.admin_note ? `<p class="muted small">運営より：${esc(r.admin_note)}</p>` : ""}</li>`).join("")}</ul>` : ""}
     </section>
-    ${upgradeSection(shop)}`;
+    ${shop.plan !== "free" && (!shop.plan_until || new Date(shop.plan_until) > new Date()) ? "" : upgradeSection(shop)}`;
   $("#req-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const { error } = await sb.from("update_requests").insert({ shop_id: shop.id, user_id: current.session.user.id, body: e.target.body.value.trim() });
@@ -289,10 +297,6 @@ async function renderPaid(body, shop, sub) {
     reload();
   });
 
-  $("#portal")?.addEventListener("click", async () => {
-    try { location.href = (await callFn("customer-portal", { shop_id: shop.id, return_url: location.href })).url; }
-    catch (err) { toast("開けませんでした：" + err.message, "error"); }
-  });
 }
 
 // 並び順を入れ替える（a と b の sort を交換）
