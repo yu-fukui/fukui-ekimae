@@ -48,8 +48,8 @@ async function render(shop) {
   const paid = isPaid(shop);
   const { data: sub } = await sb.from("subscriptions").select("*").eq("shop_id", shop.id).maybeSingle();
   root.innerHTML = `
-    ${shops.length > 1 ? `<section class="panel"><label>お店を切り替える<select id="shop-select">
-      ${shops.map((s) => `<option value="${s.id}" ${s.id === shop.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label></section>` : ""}
+    ${shops.length > 1 ? `<section class="panel"><p class="small" style="margin:0 0 8px"><b>このメールアドレスで管理できるお店（${shops.length}店）</b>　押すと切り替わります</p>
+      <div class="row" style="flex-wrap:wrap;gap:8px">${shops.map((s) => `<button type="button" class="${s.id === shop.id ? "btn" : "btn-ghost"}" data-shop="${s.id}" ${s.id === shop.id ? 'aria-current="true"' : ""}>${esc(s.name)}</button>`).join("")}</div></section>` : ""}
     <section class="panel">
       <div class="shop-hero">
         <div class="thumb" id="shop-thumb">${shop.category === "night" ? "🍸" : "🍴"}</div>
@@ -68,7 +68,11 @@ async function render(shop) {
       ${paid ? (sub ? '<p style="margin-top:10px"><button class="btn-ghost" id="portal" type="button">お支払い方法の変更・解約</button></p>' : '<p class="muted small" style="margin-top:10px">運営が設定した有料プランです。変更は運営にご連絡ください。</p>') : ""}
     </section>
     <div id="body"></div>`;
-  $("#shop-select")?.addEventListener("change", (e) => render(shops.find((s) => s.id === e.target.value)));
+  document.querySelectorAll("[data-shop]").forEach((btn) => btn.addEventListener("click", () => {
+    const next = shops.find((s) => s.id === btn.dataset.shop);
+    const u = new URL(location.href); u.searchParams.set("shop", next.id); history.replaceState(null, "", u);
+    render(next); window.scrollTo(0, 0);
+  }));
   const body = $("#body");
   sb.from("shop_photos").select("path").eq("shop_id", shop.id).order("sort").limit(1).then(({ data }) => {
     if (paid && data?.[0]) $("#shop-thumb").style.backgroundImage = `url('${photoUrl(data[0].path)}')`, ($("#shop-thumb").textContent = "");
