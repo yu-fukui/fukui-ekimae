@@ -62,7 +62,7 @@ async function render(shop) {
       </div>
       <div class="stats">
         <div><small>ご契約</small><b>${paid ? esc(PLANS[shop.plan]) : "無料プラン"}</b>
-          ${paid ? "" : '<a class="btn" href="#upgrade" id="go-upgrade" style="margin-top:8px;padding:8px 14px;font-size:.85rem;text-decoration:none;display:inline-block">有料プランに申し込む</a>'}</div>
+          ${paid ? "" : '<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn" data-plan="monthly" type="button" style="padding:8px 14px;font-size:.85rem">有料プラン（月額）に申し込む</button><button class="btn-ghost" data-plan="yearly" type="button" style="padding:8px 14px;font-size:.85rem">年額で申し込む（2か月分お得）</button></div>'}</div>
         <div><small>次回の更新日</small><b>${paid && shop.plan_until ? fmtDate(shop.plan_until) : "—"}</b></div>
         <a class="see" href="../${location.search.includes("demo") ? "?demo=1" : ""}#/shop/${encodeURIComponent(shop.slug)}" target="_blank" rel="noopener">公開ページを見る →</a>
       </div>
@@ -78,7 +78,6 @@ async function render(shop) {
   sb.from("shop_photos").select("path").eq("shop_id", shop.id).order("sort").limit(1).then(({ data }) => {
     if (paid && data?.[0]) $("#shop-thumb").style.backgroundImage = `url('${photoUrl(data[0].path)}')`, ($("#shop-thumb").textContent = "");
   });
-  $("#go-upgrade")?.addEventListener("click", (e) => { e.preventDefault(); $("#upgrade")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
   if (paid) renderPaid(body, shop, sub);
   else renderFree(body, shop);
 }
@@ -139,12 +138,13 @@ function upgradeSection(shop) {
 function bindUpgrade(shop) {
   document.querySelectorAll("[data-plan]").forEach((b) => b.addEventListener("click", async () => {
     const msg = $("#upgrade-msg");
-    b.disabled = true; msg.textContent = "お支払い画面を準備しています…";
+    b.disabled = true; msg.textContent = "お支払い画面を準備しています…"; toast("お支払い画面（Stripe）を開いています…");
     try {
       const { url } = await callFn("create-checkout", { shop_id: shop.id, plan: b.dataset.plan, return_url: location.origin + location.pathname });
       location.href = url;
     } catch (err) {
       msg.textContent = /not configured|準備中/.test(err.message) ? "お申し込みの受付は準備中です。もうしばらくお待ちください。" : "お支払い画面を開けませんでした：" + err.message;
+      toast(msg.textContent, "error");
       b.disabled = false;
     }
   }));
