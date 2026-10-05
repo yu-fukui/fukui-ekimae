@@ -23,8 +23,22 @@ Deno.serve(handle(async (req) => {
   // 既定は「2026/10/31 までのお申し込みは6か月無料」。Secrets の CAMPAIGN_UNTIL / CAMPAIGN_FREE_MONTHS で変えられる（0 で止める）
   const campUntil = Deno.env.get("CAMPAIGN_UNTIL") ?? "2026-10-31";
   const freeMonths = Number(Deno.env.get("CAMPAIGN_FREE_MONTHS") ?? "6");
+  // 前の契約のお客さま（Stripe の customer）が今の環境に実在するか確かめる（テスト環境の ID が残っていても使わない）
+  let customerId = "";
+  let usedTrial = false;
+  if (sub?.stripe_customer_id) {
+    try {
+      const c = await s.customers.retrieve(sub.stripe_customer_id);
+      if (!(c as { deleted?: boolean }).deleted) {
+        customerId = c.id;
+        // 無料期間は1店につき1回だけ（前に無料期間つきの契約があれば付けない）
+        const past = await s.subscriptions.list({ customer: c.id, status: "all", limit: 100 });
+        usedTrial = past.data.some((x) => Boolean(x.trial_start));
+      }
+    } catch (_) { /* 見つからない（テスト環境の ID など）→ 初めてのお申し込みとして扱う */ }
+  }
   let trialEnd: number | null = null;
-  if (freeMonths > 0 && Date.now() < new Date(`${campUntil}T23:59:59+09:00`).getTime() && !sub) {
+  if (freeMonths > 0 && Date.now() < new Date(`${campUntil}T23:59:59+09:00`).getTime() && !usedTrial) {
     const t = new Date(); t.setMonth(t.getMonth() + freeMonths);
     trialEnd = Math.floor(t.getTime() / 1000);
   }
@@ -37,7 +51,7 @@ Deno.serve(handle(async (req) => {
     client_reference_id: shop_id,
     metadata: { shop_id },
     subscription_data: { metadata: { shop_id }, ...(trialEnd ? { trial_end: trialEnd } : {}) },
-    ...(sub?.stripe_customer_id ? { customer: sub.stripe_customer_id } : { customer_email: user.email }),
+    ...(customerId ? { customer: customerId } : { customer_email: user.email }),
     locale: "ja",
     // クーポンの自動適用とプロモーションコード入力欄は同時に使えない
     ...(useCoupon ? { discounts: [{ coupon: autoCoupon }] } : { allow_promotion_codes: true }),

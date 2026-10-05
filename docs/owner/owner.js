@@ -99,7 +99,7 @@ async function render(shop) {
 // キャンペーン（2026/10/31 までのお申し込みは最初の6か月無料。初めてのお申し込みだけ）
 const CAMPAIGN_UNTIL = new Date("2026-10-31T23:59:59+09:00");
 function campaignNote(sub) {
-  if (sub || Date.now() > CAMPAIGN_UNTIL.getTime()) return "";
+  if ((sub && sub.stripe_customer_id && sub.status !== "canceled") || Date.now() > CAMPAIGN_UNTIL.getTime()) return "";
   return '<p class="small" style="margin:8px 0 0;color:#8a1c12"><span style="font-weight:700">10月31日までのお申し込みは、最初の6か月無料</span>（7か月目からお支払い・いつでも解約できます）</p>';
 }
 
