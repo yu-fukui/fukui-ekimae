@@ -62,7 +62,7 @@ async function render(shop) {
       </div>
       <div class="stats">
         <div><small>ご契約</small><b>${paid ? esc(PLANS[shop.plan]) : "無料プラン"}</b>
-          ${paid ? "" : '<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn" data-plan="monthly" type="button" style="padding:8px 14px;font-size:.85rem">有料プラン（月額）に申し込む</button><button class="btn-ghost" data-plan="yearly" type="button" style="padding:8px 14px;font-size:.85rem">年額で申し込む（2か月分お得）</button></div>'}</div>
+          ${paid ? "" : '<button class="btn" data-plan="monthly" type="button" style="margin-top:8px;padding:8px 16px;font-size:.85rem">有料プランに申し込む</button>'}</div>
         <div><small>次回の更新日</small><b>${paid && shop.plan_until ? fmtDate(shop.plan_until) : "—"}</b></div>
         <a class="see" href="../${location.search.includes("demo") ? "?demo=1" : ""}#/shop/${encodeURIComponent(shop.slug)}" target="_blank" rel="noopener">公開ページを見る →</a>
       </div>
@@ -116,20 +116,8 @@ function upgradeSection(shop) {
       <h2><span class="en">UPGRADE</span>有料プランにする</h2>
       <p class="muted">有料プランにすると、次のことができるようになります。</p>
       <ul class="perks">${PERKS.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
-      <div class="plans">
-        <div class="plan">
-          <span class="muted">月額プラン</span>
-          <span class="small">毎月のお支払い</span>
-          <button class="btn" data-plan="monthly" type="button">月額で申し込む</button>
-        </div>
-        <div class="plan best">
-          <span class="ribbon">2か月分お得</span>
-          <span class="muted">年額プラン</span>
-          <span class="small">1年分をまとめてお支払い</span>
-          <button class="btn" data-plan="yearly" type="button">年額で申し込む</button>
-        </div>
-      </div>
-      <p class="muted small">料金は、お申し込みのお支払い画面（Stripe）と<a href="../tokushoho.html" target="_blank">特定商取引法に基づく表記</a>でご確認いただけます。お支払いはクレジットカードです。いつでも解約でき、解約後も期間の終わりまでは有料プランのままです。
+      <button class="btn" data-plan="monthly" type="button" style="margin-top:14px">有料プランに申し込む</button>
+      <p class="muted small">月額・年額（2か月分お得）は、お支払い画面（Stripe）で選べます。料金は、お支払い画面と<a href="../tokushoho.html" target="_blank">特定商取引法に基づく表記</a>でご確認いただけます。お支払いはクレジットカードです。いつでも解約でき、解約後も期間の終わりまでは有料プランのままです。
         <a href="../terms.html" target="_blank">利用規約</a>・<a href="../tokushoho.html" target="_blank">特定商取引法に基づく表記</a></p>
       <p class="form-msg" id="upgrade-msg" role="status"></p>
     </section>`;
