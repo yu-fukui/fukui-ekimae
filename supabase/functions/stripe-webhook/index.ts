@@ -16,10 +16,13 @@ export async function applySubscription(sub: Stripe.Subscription, db: SupabaseCl
   const endSec = (sub as unknown as { current_period_end?: number }).current_period_end ?? (item as unknown as { current_period_end?: number })?.current_period_end;
   const periodEnd = endSec ? new Date(endSec * 1000) : null;
   const customer = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+  // 解約の予定（期間の終わりに解約、または日付指定の解約）
+  const cancelAt = sub.cancel_at ? new Date(sub.cancel_at * 1000) : sub.cancel_at_period_end ? periodEnd : null;
 
   await db.from("subscriptions").upsert({
     shop_id: shopId, stripe_customer_id: customer, stripe_subscription_id: sub.id, status: sub.status,
-    interval, current_period_end: periodEnd?.toISOString() ?? null, updated_at: new Date().toISOString(),
+    interval, current_period_end: periodEnd?.toISOString() ?? null, cancel_at: cancelAt?.toISOString() ?? null,
+    updated_at: new Date().toISOString(),
   }, { onConflict: "shop_id" });
 
   if (ACTIVE.has(sub.status) && periodEnd) {
