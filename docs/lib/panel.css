@@ -96,3 +96,13 @@ body.console-admin { --btn: #3d5566; }
 .account-form { padding: 24px; display: grid; gap: 10px; }
 .account-form h2 { margin: 0; font-size: 1.1rem; }
 .account-form .en { margin: 0; }
+
+/* ボタンを押した感じ（押した瞬間に沈む・処理中は回る印） */
+.console .btn, .console .btn-ghost { transition: transform .08s ease, box-shadow .15s ease, background-color .15s ease, filter .15s ease; }
+.console .btn:active:not([disabled]), .console .btn-ghost:active:not([disabled]) { transform: translateY(1px) scale(.97); }
+.console .btn-ghost:hover:not([disabled]) { background: var(--bg); border-color: var(--ink); }
+.console .btn-ghost[disabled] { opacity: .6; cursor: default; }
+.console .is-busy { pointer-events: none; }
+.console .is-busy::before { content: ""; display: inline-block; width: .9em; height: .9em; margin-right: .5em; vertical-align: -.1em;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: btnspin .7s linear infinite; }
+@keyframes btnspin { to { transform: rotate(360deg); } }

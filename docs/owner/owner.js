@@ -86,9 +86,11 @@ async function render(shop) {
   sb.from("shop_photos").select("path").eq("shop_id", shop.id).order("sort").limit(1).then(({ data }) => {
     if (paid && data?.[0]) $("#shop-thumb").style.backgroundImage = `url('${photoUrl(data[0].path)}')`, ($("#shop-thumb").textContent = "");
   });
-  $("#portal")?.addEventListener("click", async () => {
+  $("#portal")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget, label = b.textContent;
+    b.disabled = true; b.classList.add("is-busy"); b.textContent = "Stripe の画面を開いています…";
     try { location.href = (await callFn("customer-portal", { shop_id: shop.id, return_url: location.href })).url; }
-    catch (err) { toast("開けませんでした：" + err.message, "error"); }
+    catch (err) { toast("開けませんでした：" + err.message, "error"); b.disabled = false; b.classList.remove("is-busy"); b.textContent = label; }
   });
   if (paid) renderPaid(body, shop, sub);
   else renderFree(body, shop);
@@ -146,14 +148,15 @@ function upgradeSection(shop) {
 function bindUpgrade(shop) {
   document.querySelectorAll("[data-plan]").forEach((b) => b.addEventListener("click", async () => {
     const msg = $("#upgrade-msg");
-    b.disabled = true; msg.textContent = "お支払い画面を準備しています…"; toast("お支払い画面（Stripe）を開いています…");
+    const label = b.textContent;
+    b.disabled = true; b.classList.add("is-busy"); b.textContent = "お支払い画面を開いています…"; msg.textContent = "お支払い画面を準備しています…";
     try {
       const { url } = await callFn("create-checkout", { shop_id: shop.id, plan: b.dataset.plan, return_url: location.origin + location.pathname });
       location.href = url;
     } catch (err) {
       msg.textContent = /not configured|準備中/.test(err.message) ? "お申し込みの受付は準備中です。もうしばらくお待ちください。" : "お支払い画面を開けませんでした：" + err.message;
       toast(msg.textContent, "error");
-      b.disabled = false;
+      b.disabled = false; b.classList.remove("is-busy"); b.textContent = label;
     }
   }));
 }
