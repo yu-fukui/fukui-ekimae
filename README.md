@@ -12,14 +12,14 @@
  公開サイト（GitHub Pages・静的）──読む──▶ Supabase（店のデータ・ログイン・写真）
  お店の管理画面 / 運営管理 ───読み書き──▶      ▲                ▲
                                               │ Webhook        │ 招待メール
- Stripe（月額1,000円・年額10,000円）──────────┘                │
+ Stripe（月額1,100円・年額11,000円）──────────┘                │
  GitHub Actions ─ 毎晩：店のデータから翌日の投稿を作る ─▶ posts/queue.jsonl
                 └ 10分おき：予約時刻が来た投稿を Threads へ
 ```
 
 ## プラン
 
-| | 無料 | 有料（月額1,000円／年額10,000円・税込） |
+| | 無料 | 有料（月額1,100円／年額11,000円・税込） |
 |---|---|---|
 | 公開される情報 | 店名・ジャンル・エリア・地図リンク・Instagram | 左に加えて、ひとこと・紹介文・営業時間・定休日・電話番号（タップで電話）・写真5枚・リンク10件 |
 | 情報の変更 | 管理画面から「更新依頼」を送り、運営が反映 | 管理画面から自分で直接編集 |
@@ -107,8 +107,8 @@ supabase secrets set RESEND_API_KEY=re_... NOTIFY_TO=yasu29fr@gmail.com \
 まず**テストモード**で一通り試してから、本番のキーに切り替える。
 
 1. 商品カタログ → 商品「ふくふく 有料掲載プラン」を作り、価格を2つ追加する。
-   - 1,000円（税込）・継続・毎月 → `price_...` を `STRIPE_PRICE_MONTHLY` に
-   - 10,000円（税込）・継続・毎年 → `price_...` を `STRIPE_PRICE_YEARLY` に
+   - 1,100円（税込）・継続・毎月 → `price_...` を `STRIPE_PRICE_MONTHLY` に
+   - 11,000円（税込）・継続・毎年 → `price_...` を `STRIPE_PRICE_YEARLY` に
 2. 開発者 → Webhook → エンドポイントを追加
    - URL：`https://<プロジェクトID>.supabase.co/functions/v1/stripe-webhook`
    - イベント：`checkout.session.completed`、`customer.subscription.created`、`customer.subscription.updated`、`customer.subscription.deleted`
