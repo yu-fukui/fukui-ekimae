@@ -47,6 +47,7 @@ async function render(shop) {
   const { shops } = current;
   const paid = isPaid(shop);
   const { data: sub } = await sb.from("subscriptions").select("*").eq("shop_id", shop.id).maybeSingle();
+  current.sub = sub;
   // 契約中か（サイトに非表示のお店でも、契約と解約の操作は見せる）
   const contracted = shop.plan !== "free" && (!shop.plan_until || new Date(shop.plan_until) > new Date());
   const canceling = contracted && sub && sub.cancel_at && ["active", "trialing", "past_due"].includes(sub.status);
@@ -68,8 +69,8 @@ async function render(shop) {
       </div>
       <div class="stats">
         <div><small>ご契約</small><b>${contracted ? esc(PLANS[shop.plan]) : "無料プラン"}</b>
-          ${contracted ? "" : shop.is_hidden ? '<p class="muted small" style="margin:8px 0 0">サイトに掲載していないため、お申し込みはできません。運営にご連絡ください。</p>' : '<button class="btn" data-plan="monthly" type="button" style="margin-top:8px;padding:8px 16px;font-size:.85rem">有料プランに申し込む</button>'}</div>
-        <div><small>${canceling ? "有料プランの終了日" : "次回の更新日"}</small><b>${contracted && (canceling ? sub.cancel_at : nextDate) ? fmtDate(canceling ? sub.cancel_at : nextDate) : "—"}</b></div>
+          ${contracted ? "" : shop.is_hidden ? '<p class="muted small" style="margin:8px 0 0">サイトに掲載していないため、お申し込みはできません。運営にご連絡ください。</p>' : `${campaignNote(sub)}<button class="btn" data-plan="monthly" type="button" style="margin-top:8px;padding:8px 16px;font-size:.85rem">有料プランに申し込む</button>`}</div>
+        <div><small>${canceling ? "有料プランの終了日" : sub?.status === "trialing" ? "無料期間の終わり（翌日からお支払い）" : "次回の更新日"}</small><b>${contracted && (canceling ? sub.cancel_at : nextDate) ? fmtDate(canceling ? sub.cancel_at : nextDate) : "—"}</b></div>
         <a class="see" href="../${location.search.includes("demo") ? "?demo=1" : ""}#/shop/${encodeURIComponent(shop.slug)}" target="_blank" rel="noopener">公開ページを見る →</a>
       </div>
       ${canceling ? `<p class="notice" style="margin-top:10px;padding:10px 14px;border-radius:12px;background:#fdecea;color:#8a1c12"><b>解約の手続きが済んでいます。</b>${fmtDate(sub.cancel_at)}で有料プランが終わり、無料掲載に戻ります。それまでは今までどおりご利用いただけます。<br><span class="small">取り消すときは「お支払い方法の変更・解約」から「サブスクを続ける」を押してください。</span></p>` : ""}
@@ -91,6 +92,13 @@ async function render(shop) {
   });
   if (paid) renderPaid(body, shop, sub);
   else renderFree(body, shop);
+}
+
+// キャンペーン（2026/10/31 までのお申し込みは最初の6か月無料。初めてのお申し込みだけ）
+const CAMPAIGN_UNTIL = new Date("2026-10-31T23:59:59+09:00");
+function campaignNote(sub) {
+  if (sub || Date.now() > CAMPAIGN_UNTIL.getTime()) return "";
+  return '<p class="small" style="margin:8px 0 0;color:#8a1c12"><span style="font-weight:700">10月31日までのお申し込みは、最初の6か月無料</span>（7か月目からお支払い・いつでも解約できます）</p>';
 }
 
 // ───────── 無料プラン ─────────
@@ -127,6 +135,7 @@ function upgradeSection(shop) {
       <h2><span class="en">UPGRADE</span>有料プランにする</h2>
       <p class="muted">有料プランにすると、次のことができるようになります。</p>
       <ul class="perks">${PERKS.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
+      ${campaignNote(current.sub)}
       <button class="btn" data-plan="monthly" type="button" style="margin-top:14px">有料プランに申し込む</button>
       <p class="muted small">月額・年額（2か月分お得）は、お支払い画面（Stripe）で選べます。料金は、お支払い画面と<a href="../tokushoho.html" target="_blank">特定商取引法に基づく表記</a>でご確認いただけます。お支払いはクレジットカードです。いつでも解約でき、解約後も期間の終わりまでは有料プランのままです。
         <a href="../terms.html" target="_blank">利用規約</a>・<a href="../tokushoho.html" target="_blank">特定商取引法に基づく表記</a></p>
