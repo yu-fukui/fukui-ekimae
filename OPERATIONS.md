@@ -71,7 +71,7 @@
 - 片町ガイド（https://ekimae.fukui-fukui.com/katamachi/ ）のお店一覧は `katamachi-guide.yml` が毎朝作り直す
 - お問い合わせ・更新依頼の通知：Edge Function `notify-admin` → Resend（差出人 `ふくいエキマエ <info@fukui-fukui.com>`）→ yasu29fr@gmail.com。
   新しいドメインなので迷惑メールに入りやすい（代表の Gmail はフィルタで対応済み）。お店を招待するときは「迷惑メールも見てください」と伝える
-- 管理画面：https://ekimae.fukui-fukui.com/admin/ （運営）、/owner/（お店）
+- 管理画面：https://ekimae.fukui-fukui.com/kanri-e9bd6eaadd/ （運営）、/owner/（お店）
 
 ## 5. 進行中の作業
 

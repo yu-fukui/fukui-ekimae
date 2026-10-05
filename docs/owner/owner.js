@@ -61,7 +61,8 @@ async function render(shop) {
         </div>
       </div>
       <div class="stats">
-        <div><small>ご契約</small><b>${paid ? esc(PLANS[shop.plan]) : "無料プラン"}</b></div>
+        <div><small>ご契約</small><b>${paid ? esc(PLANS[shop.plan]) : "無料プラン"}</b>
+          ${paid ? "" : '<a class="btn" href="#upgrade" id="go-upgrade" style="margin-top:8px;padding:8px 14px;font-size:.85rem;text-decoration:none;display:inline-block">有料プランに申し込む</a>'}</div>
         <div><small>次回の更新日</small><b>${paid && shop.plan_until ? fmtDate(shop.plan_until) : "—"}</b></div>
         <a class="see" href="../${location.search.includes("demo") ? "?demo=1" : ""}#/shop/${encodeURIComponent(shop.slug)}" target="_blank" rel="noopener">公開ページを見る →</a>
       </div>
@@ -77,6 +78,7 @@ async function render(shop) {
   sb.from("shop_photos").select("path").eq("shop_id", shop.id).order("sort").limit(1).then(({ data }) => {
     if (paid && data?.[0]) $("#shop-thumb").style.backgroundImage = `url('${photoUrl(data[0].path)}')`, ($("#shop-thumb").textContent = "");
   });
+  $("#go-upgrade")?.addEventListener("click", (e) => { e.preventDefault(); $("#upgrade")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
   if (paid) renderPaid(body, shop, sub);
   else renderFree(body, shop);
 }
@@ -118,17 +120,17 @@ function upgradeSection(shop) {
       <div class="plans">
         <div class="plan">
           <span class="muted">月額プラン</span>
-          <span class="price">1,000円<small>／月（税込）</small></span>
+          <span class="small">毎月のお支払い</span>
           <button class="btn" data-plan="monthly" type="button">月額で申し込む</button>
         </div>
         <div class="plan best">
           <span class="ribbon">2か月分お得</span>
           <span class="muted">年額プラン</span>
-          <span class="price">10,000円<small>／年（税込）</small></span>
+          <span class="small">1年分をまとめてお支払い</span>
           <button class="btn" data-plan="yearly" type="button">年額で申し込む</button>
         </div>
       </div>
-      <p class="muted small">お支払いはクレジットカード（Stripe）です。いつでも解約でき、解約後も期間の終わりまでは有料プランのままです。
+      <p class="muted small">料金は、お申し込みのお支払い画面（Stripe）と<a href="../tokushoho.html" target="_blank">特定商取引法に基づく表記</a>でご確認いただけます。お支払いはクレジットカードです。いつでも解約でき、解約後も期間の終わりまでは有料プランのままです。
         <a href="../terms.html" target="_blank">利用規約</a>・<a href="../tokushoho.html" target="_blank">特定商取引法に基づく表記</a></p>
       <p class="form-msg" id="upgrade-msg" role="status"></p>
     </section>`;
