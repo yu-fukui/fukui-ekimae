@@ -11,7 +11,7 @@ export type Deps = {
   shopName: (shopId: string) => Promise<string>;
 };
 
-const KIND: Record<string, string> = { owner: "店舗会員になりたい", fix: "情報の修正・写真やリンクの掲載", remove: "掲載の取りやめ", closed: "閉店・移転などの情報", other: "その他" };
+const KIND: Record<string, string> = { owner: "店舗会員の申し込み（お店のオーナー）", fix: "掲載内容の修正依頼", remove: "掲載の取りやめ", closed: "閉店・移転などの情報", other: "その他" };
 const ADMIN_URL = () => `${SITE_URL}kanri-e9bd6eaadd/`;
 
 function same(a: string, b: string) {

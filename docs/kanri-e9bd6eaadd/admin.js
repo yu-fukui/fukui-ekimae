@@ -67,7 +67,7 @@ async function showRequests(pane) {
   });
 }
 
-const KIND = { owner: "店舗会員の申し込み", fix: "情報の修正・掲載", remove: "掲載の取りやめ", closed: "閉店・移転の情報", other: "その他" };
+const KIND = { owner: "店舗会員の申し込み", fix: "掲載内容の修正依頼", remove: "掲載の取りやめ", closed: "閉店・移転の情報", other: "その他" };
 // 招待メールのリンクの戻り先：お店の管理画面（このフォルダと同じ階層の owner/）
 const inviteTo = () => new URL("../owner/", location.href).href;
 
@@ -89,7 +89,7 @@ async function showInquiries(pane) {
   // 店舗会員の申し込み：対象の店を決めて、そのまま招待メールを送れる
   const ownerBox = (r) => {
     if (inqTrash || r.kind !== "owner" || r.status !== "open") return "";
-    const email = /@/.test(r.contact) ? r.contact : "";
+    const email = (r.contact.match(/[^\s／]+@[^\s／]+/) || [""])[0];   // 連絡先は「メール ／ 電話 ○○」の形
     const shop = r.shops
       ? `<p class="small">対象のお店：<strong>${esc(r.shops.name)}</strong>（${esc(r.shops.town || "")}）${r.shops.tel ? ` ／ 店の電話：<a href="tel:${esc(r.shops.tel)}">${esc(r.shops.tel)}</a>` : " ／ 店の電話：未登録"}
           <a class="small" href="../#/shop/${encodeURIComponent(r.shops.slug)}" target="_blank">公開ページ</a>

@@ -379,7 +379,7 @@
   toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   if (location.hash === "#inquiry") setTimeout(openInquiry, 300);
 
-  // お問い合わせフォーム。「店舗会員になりたい」を選ぶと、メールアドレス（ログイン用）とお立場を聞く
+  // お問い合わせフォーム。「店舗会員の申し込み」を選ぶと、お立場も聞く（メールアドレスはログインに使う）
   const inqForm = $("#inquiry-form");
   let inqShopId = "";   // お店のページから来たときの店（店名を書き換えたら外す）
   function syncInquiryKind() {
@@ -387,8 +387,7 @@
     $("#owner-note").hidden = !owner;
     $("#role-field").hidden = !owner;
     inqForm.role.required = owner;
-    inqForm.contact.type = owner ? "email" : "text";
-    $("#contact-label").textContent = owner ? "メールアドレス（ログインに使います）" : "ご連絡先（メールアドレスまたは電話番号）";
+    $("#contact-label").textContent = owner ? "メールアドレス（必須・ログインに使います）" : "メールアドレス（必須）";
   }
   inqForm.addEventListener("change", (e) => { if (e.target.name === "kind") syncInquiryKind(); });
   inqForm.shop_name.addEventListener("input", () => { inqShopId = ""; });
@@ -415,7 +414,7 @@
     const hits = state.shops.filter((s) => s.name === name && s.id);
     const shopId = inqShopId || (hits.length === 1 ? hits[0].id : null);
     const role = kind === "owner" ? f.role.value.trim() : "";
-    const body = { kind, shop_id: shopId, shop_name: name, contact: f.contact.value.trim(), message: ((role ? `【お名前・お立場】${role}\n` : "") + f.message.value.trim()).trim() };
+    const body = { kind, shop_id: shopId, shop_name: name, contact: [f.contact.value.trim(), f.tel.value.trim() && `電話 ${f.tel.value.trim()}`].filter(Boolean).join(" ／ "), message: ((role ? `【お名前・お立場】${role}\n` : "") + f.message.value.trim()).trim() };
     try {
       const res = await fetch(`${cfg.supabaseUrl}/rest/v1/inquiries`, {
         method: "POST",
