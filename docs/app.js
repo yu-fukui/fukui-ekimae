@@ -276,6 +276,7 @@
         <div class="d-actions">
           ${s.tel ? `<a class="d-btn tel" href="tel:${esc(telHref(s.tel))}">${svg("tel")}<span><b>電話する</b><small>${esc(s.tel)}</small></span></a>` : ""}
           ${s.instagram ? `<a class="d-btn ig" href="${igUrl(s.instagram)}" target="_blank" rel="noopener">${svg("ig")}<span><b>Instagram</b><small>@${esc(s.instagram)}</small></span></a>` : ""}
+          ${s.website && /^https?:\/\//.test(s.website) && !links.some((l) => l.url === s.website) ? `<a class="d-btn" href="${esc(s.website)}" target="_blank" rel="noopener">${svg("link")}<span><b>公式サイト</b><small>${esc(s.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, ""))}</small></span></a>` : ""}
           ${s.reservation_url && /^https?:\/\//.test(s.reservation_url) ? `<a class="d-btn" href="${esc(s.reservation_url)}" target="_blank" rel="noopener">${svg("link")}<span><b>予約する</b><small>予約ページ</small></span></a>` : ""}
           <a class="d-btn" href="${mapUrl(s)}" target="_blank" rel="noopener">${svg("map")}<span><b>地図で見る</b><small>Googleマップ</small></span></a>
           ${links.map((l) => `<a class="d-btn" href="${esc(l.url)}" target="_blank" rel="noopener">${svg("link")}<span><b>${esc(l.label || LINK_LABEL[l.kind] || "リンク")}</b><small>${esc(LINK_LABEL[l.kind] || "")}</small></span></a>`).join("")}
