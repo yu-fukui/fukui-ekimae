@@ -33,7 +33,7 @@
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/yakuhanjp@4.1.1/dist/css/yakuhanjp.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=M+PLUS+Rounded+1c:wght@700;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" />
-  <link rel="stylesheet" href="./styles.css?v=32" />
+  <link rel="stylesheet" href="./styles.css?v=33" />
   <!-- Google アナリティクス（訪問数・よく見られているページの計測。管理画面・お店の画面・予約画面には入れない） -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9J2X4WZBW"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-H9J2X4WZBW");</script>
@@ -128,9 +128,19 @@
       <div class="inq-body">
         <p>お店の掲載・情報の修正・掲載の取りやめ・写真やリンクの掲載は、こちらからご連絡ください。お店の方でなくても、閉店・移転などの情報をお寄せいただけると助かります。必要に応じて運営から折り返します。</p>
         <form id="inquiry-form">
-          <label>お店の名前<input name="shop_name" required maxlength="100" /></label>
-          <label>ご連絡先（メールアドレスまたは電話番号）<input name="contact" required maxlength="200" /></label>
-          <label>ご用件<textarea name="message" rows="3" maxlength="2000"></textarea></label>
+          <fieldset class="kind-pick"><legend>ご用件</legend>
+            <label><input type="radio" name="kind" value="owner" />店舗会員になりたい（お店の方）</label>
+            <label><input type="radio" name="kind" value="fix" checked />情報の修正・写真やリンクの掲載</label>
+            <label><input type="radio" name="kind" value="remove" />掲載の取りやめ</label>
+            <label><input type="radio" name="kind" value="closed" />閉店・移転などの情報</label>
+            <label><input type="radio" name="kind" value="other" />その他</label>
+          </fieldset>
+          <p class="owner-note" id="owner-note" hidden>店舗会員になると、写真・紹介文・営業時間・予約ページなどをご自身で載せられます。お店の電話番号などでご本人確認をしたうえで、ログインのご案内をメールでお送りします。</p>
+          <label>お店の名前<input name="shop_name" required maxlength="100" list="shop-names" autocomplete="off" /></label>
+          <datalist id="shop-names"></datalist>
+          <label><span id="contact-label">ご連絡先（メールアドレスまたは電話番号）</span><input name="contact" required maxlength="200" /></label>
+          <label id="role-field" hidden>お名前・お立場（例：店長 山田）<input name="role" maxlength="60" /></label>
+          <label>ご用件の詳細<textarea name="message" rows="3" maxlength="1900"></textarea></label>
           <button type="submit" class="btn">送信する</button>
           <p class="form-msg" id="inquiry-msg" role="status"></p>
         </form>
@@ -162,7 +172,7 @@
   <button type="button" class="to-top" id="to-top" aria-label="ページのいちばん上へ" hidden><svg class="i"><use href="#i-up"/></svg></button>
 
   <script src="./config.js?v=2"></script>
-  <script src="./app.js?v=31"></script>
+  <script src="./app.js?v=32"></script>
 <!-- Cloudflare Web Analytics（Cookie を使わない訪問数の計測。管理画面・お店の画面・予約画面には入れない） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3aaafd7d27394467afd6af1b848c00ac"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

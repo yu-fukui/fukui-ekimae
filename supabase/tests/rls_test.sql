@@ -30,6 +30,8 @@ select pg_temp.check((select is_paid from public_shops where slug='paid-shop'), 
 select pg_temp.check(not (select is_paid from public_shops where slug='expired'), '期限切れは無料扱い');
 insert into inquiries (shop_name, contact, message) values ('テスト店','test@example.com','掲載したい');
 select pg_temp.check(true, '未ログインでも掲載問い合わせを送れる');
+insert into inquiries (kind, shop_id, shop_name, contact) values ('owner', (select id from public_shops where slug='free-shop'), '無料の店', 'owner@example.com');
+select pg_temp.check(true, '未ログインでも店舗会員の申し込み（店つき）を送れる');
 reset role;
 
 -- 2. 無料のオーナー：自分の店は読める。編集はできない（0行）。更新依頼は送れる。
@@ -86,7 +88,8 @@ set role authenticated; select pg_temp.as_user('00000000-0000-0000-0000-00000000
 select pg_temp.check((select count(*) from shops) = 4, '運営は全店（非表示含む）を読める');
 update shops set name='有料の店（改）', plan='yearly' where slug='paid-shop';
 select pg_temp.check((select name from shops where slug='paid-shop') = '有料の店（改）', '運営は店名を変えられる');
-select pg_temp.check((select count(*) from inquiries) = 1, '運営は問い合わせを読める');
+select pg_temp.check((select count(*) from inquiries) = 2, '運営は問い合わせを読める');
+select pg_temp.check((select shop_id from inquiries where kind='owner') = (select id from shops where slug='free-shop'), '申し込みに店がつく');
 reset role;
 
 -- 6. 公開ビュー：有料の店は写真5枚・紹介文が出る

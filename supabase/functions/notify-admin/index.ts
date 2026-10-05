@@ -11,6 +11,7 @@ export type Deps = {
   shopName: (shopId: string) => Promise<string>;
 };
 
+const KIND: Record<string, string> = { owner: "店舗会員になりたい", fix: "情報の修正・写真やリンクの掲載", remove: "掲載の取りやめ", closed: "閉店・移転などの情報", other: "その他" };
 const ADMIN_URL = () => `${SITE_URL}kanri-e9bd6eaadd/`;
 
 function same(a: string, b: string) {
@@ -24,9 +25,10 @@ export async function compose(p: Payload, shopName: Deps["shopName"]): Promise<M
   const r = p.record ?? {};
   if (p.type !== "INSERT") return null;
   if (p.table === "inquiries") {
+    const kind = KIND[String(r.kind)] ?? KIND.other;
     return {
-      subject: `【ふくいエキマエ】お問い合わせ：${r.shop_name}`,
-      text: `サイトからお問い合わせが届きました。\n\n店名：${r.shop_name}\n連絡先：${r.contact}\n\n${r.message || "（本文なし）"}\n\n管理画面：${ADMIN_URL()}`,
+      subject: `【ふくいエキマエ】${r.kind === "owner" ? "店舗会員の申し込み" : "お問い合わせ"}：${r.shop_name}`,
+      text: `サイトからお問い合わせが届きました。\n\nご用件：${kind}\n店名：${r.shop_name}\n連絡先：${r.contact}\n\n${r.message || "（本文なし）"}\n\n管理画面：${ADMIN_URL()}`,
     };
   }
   if (p.table === "update_requests") {

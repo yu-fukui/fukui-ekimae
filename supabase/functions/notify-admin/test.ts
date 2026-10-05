@@ -20,6 +20,13 @@ Deno.test("お問い合わせが届いたらメールを送る", async () => {
   assertStringIncludes(sent[0].text, "hana@example.com");
 });
 
+Deno.test("店舗会員の申し込みは件名でわかる", async () => {
+  const { sent, call } = setup();
+  await call({ type: "INSERT", table: "inquiries", record: { kind: "owner", shop_name: "スナック花", contact: "hana@example.com", message: "" } });
+  assertStringIncludes(sent[0].subject, "店舗会員の申し込み");
+  assertStringIncludes(sent[0].text, "ご用件：店舗会員になりたい");
+});
+
 Deno.test("更新依頼は店名を引いて送る", async () => {
   const { sent, call } = setup();
   await call({ type: "INSERT", table: "update_requests", record: { shop_id: "shop-1", body: "定休日が変わりました" } });

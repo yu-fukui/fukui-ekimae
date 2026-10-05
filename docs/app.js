@@ -293,7 +293,7 @@
         <p class="eyebrow"><span class="band">FOR SHOPS</span></p>
         <h2>このお店の方へ</h2>
         <p>店舗会員登録をしていただくと、写真・紹介文・営業時間・予約ページなどを載せることができます。</p>
-        <a class="btn" href="#inquiry">掲載について問い合わせる</a>
+        <a class="btn" href="#inquiry" data-inq-shop="${esc(s.slug)}">店舗会員の登録を申し込む</a>
       </aside>`}
       ${near.length ? `
       <section class="d-near">
@@ -379,12 +379,43 @@
   toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   if (location.hash === "#inquiry") setTimeout(openInquiry, 300);
 
-  $("#inquiry-form").addEventListener("submit", async (e) => {
+  // お問い合わせフォーム。「店舗会員になりたい」を選ぶと、メールアドレス（ログイン用）とお立場を聞く
+  const inqForm = $("#inquiry-form");
+  let inqShopId = "";   // お店のページから来たときの店（店名を書き換えたら外す）
+  function syncInquiryKind() {
+    const owner = inqForm.kind.value === "owner";
+    $("#owner-note").hidden = !owner;
+    $("#role-field").hidden = !owner;
+    inqForm.role.required = owner;
+    inqForm.contact.type = owner ? "email" : "text";
+    $("#contact-label").textContent = owner ? "メールアドレス（ログインに使います）" : "ご連絡先（メールアドレスまたは電話番号）";
+  }
+  inqForm.addEventListener("change", (e) => { if (e.target.name === "kind") syncInquiryKind(); });
+  inqForm.shop_name.addEventListener("input", () => { inqShopId = ""; });
+  // 「店舗会員の登録を申し込む」（お店のページ）から来たら、店名と用件を入れておく
+  document.addEventListener("click", (e) => {
+    const a = e.target instanceof Element && e.target.closest("[data-inq-shop]");
+    if (!a) return;
+    const s = state.shops.find((x) => x.slug === a.dataset.inqShop);
+    if (!s) return;
+    inqForm.shop_name.value = s.name; inqShopId = s.id || "";
+    inqForm.kind.value = "owner"; syncInquiryKind();
+  }, true);
+  function fillShopNames() {
+    $("#shop-names").innerHTML = [...new Set(state.shops.map((s) => s.name))].map((n) => `<option value="${esc(n)}"></option>`).join("");
+  }
+
+  inqForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.target, msg = $("#inquiry-msg"), btn = f.querySelector("button");
     if (!hasDb) { msg.textContent = "ただいま準備中です。Threads @fukui_ekimae の DM でご連絡ください。"; return; }
     btn.disabled = true; msg.textContent = "送信しています…";
-    const body = { shop_name: f.shop_name.value.trim(), contact: f.contact.value.trim(), message: f.message.value.trim() };
+    const kind = f.kind.value || "other", name = f.shop_name.value.trim();
+    // 店名が一覧のお店と1件だけ一致すれば、その店として送る（管理画面からすぐ招待できる）
+    const hits = state.shops.filter((s) => s.name === name && s.id);
+    const shopId = inqShopId || (hits.length === 1 ? hits[0].id : null);
+    const role = kind === "owner" ? f.role.value.trim() : "";
+    const body = { kind, shop_id: shopId, shop_name: name, contact: f.contact.value.trim(), message: ((role ? `【お名前・お立場】${role}\n` : "") + f.message.value.trim()).trim() };
     try {
       const res = await fetch(`${cfg.supabaseUrl}/rest/v1/inquiries`, {
         method: "POST",
@@ -392,7 +423,9 @@
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(String(res.status));
-      f.reset(); msg.textContent = "送信しました。運営から折り返しご連絡します。";
+      f.reset(); inqShopId = ""; syncInquiryKind();
+      msg.textContent = kind === "owner" ? "送信しました。ご本人確認のうえ、ログインのご案内をメールでお送りします。" : "送信しました。運営から折り返しご連絡します。";
+      if (window.gtag) window.gtag("event", "inquiry_submit", { kind });
     } catch (err) {
       msg.textContent = "送信できませんでした。時間をおいてもう一度お試しください。";
     } finally { btn.disabled = false; }
@@ -409,7 +442,7 @@
   }
 
   Promise.all([load(), loadDemo()])
-    .then(([rows, extra]) => { state.shops = sortShops(extra.concat(rows)); route(); })
+    .then(([rows, extra]) => { state.shops = sortShops(extra.concat(rows)); fillShopNames(); route(); })
     .catch((err) => {
       $("#cards").removeAttribute("aria-busy");
       $("#cards").innerHTML = `<li class="empty"><b>お店の情報を読み込めませんでした</b><p>通信の状態を確かめて、もう一度お試しください。${/^エラー \d+$/.test(err.message) ? `<br><small>（${esc(err.message)}）</small>` : ""}</p>

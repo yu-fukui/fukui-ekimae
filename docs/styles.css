@@ -340,6 +340,12 @@ body[data-mode="day"] .emblem { border-radius: 50%; box-shadow: 0 0 0 2px #fff; 
 .inq[open] summary::after { content: "－"; }
 .inq-body { padding: 0 4px 18px; }
 .inq-body > p { font-size: .84rem; color: var(--muted); margin: 0 0 12px; }
+.kind-pick { border: 0; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.kind-pick legend { font-size: .8rem; font-weight: 700; margin-bottom: 6px; padding: 0; }
+.kind-pick label { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: .8rem; font-weight: 700; border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.kind-pick input { width: auto; margin: 0; accent-color: var(--main); }
+.kind-pick label:has(input:checked) { border-color: var(--main); color: var(--main); background: var(--main-soft); }
+.owner-note { font-size: .82rem; background: var(--main-soft); border-radius: 12px; padding: 10px 12px; margin: 0 0 12px; }
 
 /* ヘッダーの境界は昼夜とも直線。夜は金色の細い線 */
 body[data-mode="night"] .hd::after { background: var(--accent); height: 3px; bottom: -3px; }

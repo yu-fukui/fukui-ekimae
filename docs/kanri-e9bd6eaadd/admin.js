@@ -67,9 +67,13 @@ async function showRequests(pane) {
   });
 }
 
+const KIND = { owner: "店舗会員の申し込み", fix: "情報の修正・掲載", remove: "掲載の取りやめ", closed: "閉店・移転の情報", other: "その他" };
+// 招待メールのリンクの戻り先：お店の管理画面（このフォルダと同じ階層の owner/）
+const inviteTo = () => new URL("../owner/", location.href).href;
+
 async function showInquiries(pane) {
   // 削除するとゴミ箱へ（deleted_at に日時が入る）。ゴミ箱から元に戻すか、完全に削除できる
-  let q = sb.from("inquiries").select("*");
+  let q = sb.from("inquiries").select("*, shops(id, name, slug, tel, town)");
   q = inqTrash ? q.not("deleted_at", "is", null).order("deleted_at", { ascending: false })
                : q.is("deleted_at", null).order("status").order("created_at", { ascending: false });
   const [{ data }, { count: nTrash }] = await Promise.all([
@@ -82,18 +86,57 @@ async function showInquiries(pane) {
     : r.status === "open"
       ? '<button class="btn-ghost" data-done>対応済みにする</button>'   // 未対応のものはゴミ箱に入れられない（対応漏れを防ぐ）
       : '<span class="badge paid">対応済み</span><button class="btn-ghost danger" data-trash>ゴミ箱へ</button>';
+  // 店舗会員の申し込み：対象の店を決めて、そのまま招待メールを送れる
+  const ownerBox = (r) => {
+    if (inqTrash || r.kind !== "owner" || r.status !== "open") return "";
+    const email = /@/.test(r.contact) ? r.contact : "";
+    const shop = r.shops
+      ? `<p class="small">対象のお店：<strong>${esc(r.shops.name)}</strong>（${esc(r.shops.town || "")}）${r.shops.tel ? ` ／ 店の電話：<a href="tel:${esc(r.shops.tel)}">${esc(r.shops.tel)}</a>` : " ／ 店の電話：未登録"}
+          <a class="small" href="../#/shop/${encodeURIComponent(r.shops.slug)}" target="_blank">公開ページ</a>
+          <button class="icon-btn" data-unpick>別の店にする</button></p>
+         <div class="row" style="align-items:flex-end">
+           <label style="flex:1;min-width:220px">招待するメールアドレス<input type="email" data-invite-email value="${esc(email)}" /></label>
+           <button class="btn" data-invite>このお店に招待する</button></div>
+         <p class="muted small">店の電話や公式アカウントの DM で、申し込んだ方がお店の方かを確かめてから招待してください。招待すると、この問い合わせは対応済みになります。</p>`
+      : `<p class="small">対象のお店がまだ決まっていません。店名で探して選んでください。</p>
+         <label>お店を探す<input data-shop-q value="${esc(r.shop_name)}" /></label><div class="row" data-shop-hits></div>`;
+    return `<div class="owner-box">${shop}</div>`;
+  };
   pane.innerHTML = `<section class="panel"><div class="spread"><h2><span class="en">${inqTrash ? "TRASH" : "INQUIRIES"}</span>${inqTrash ? "ゴミ箱" : "掲載の問い合わせ"}</h2>
       <button class="btn-ghost" data-toggle-trash>${inqTrash ? "← 問い合わせ一覧へ" : `ゴミ箱${nTrash ? `（${nTrash}件）` : ""}`}</button></div>
     ${data?.length ? `<ul class="list">${data.map((r) => `
-    <li data-id="${r.id}"><div class="spread"><strong>${esc(r.shop_name)}</strong><span class="small muted">${fmtDate(r.created_at)}</span></div>
+    <li data-id="${r.id}"><div class="spread"><span><span class="badge${r.kind === "owner" ? " warn" : ""}">${esc(KIND[r.kind] || "その他")}</span> <strong>${esc(r.shop_name)}</strong></span><span class="small muted">${fmtDate(r.created_at)}</span></div>
       <p class="small">連絡先：${esc(r.contact)}</p><p style="white-space:pre-wrap;margin:4px 0">${esc(r.message)}</p>
+      ${ownerBox(r)}
       <div class="row">${acts(r)}</div></li>`).join("")}</ul>` : `<p class="muted">${inqTrash ? "ゴミ箱は空です。" : "問い合わせはありません。"}</p>`}</section>`;
+  // 店名で探す（ふりがなでも）
+  const search = async (input) => {
+    const w = input.value.trim().replace(/[,()*%\\]/g, " ").trim(), box = input.closest("li").querySelector("[data-shop-hits]");
+    if (!w) { box.innerHTML = ""; return; }
+    const { data: hits } = await sb.from("shops").select("id, name, town").or(`name.ilike.*${w}*,kana.ilike.*${w}*`).limit(8);
+    box.innerHTML = (hits || []).map((h) => `<button class="btn-ghost" data-pick-shop="${h.id}">${esc(h.name)}<span class="small muted">（${esc(h.town || "")}）</span></button>`).join("") || '<span class="small muted">見つかりません。</span>';
+  };
+  pane.querySelectorAll("[data-shop-q]").forEach((i) => search(i));
+  let timer;
+  pane.oninput = (e) => { if (e.target.matches("[data-shop-q]")) { clearTimeout(timer); timer = setTimeout(() => search(e.target), 250); } };
   pane.onclick = async (e) => {
     const b = e.target.closest("button"); if (!b) return;
     if ("toggleTrash" in b.dataset) { inqTrash = !inqTrash; return show(); }
     const li = b.closest("li"); if (!li) return;
     const id = li.dataset.id, name = li.querySelector("strong").textContent;
     let res;
+    if (b.dataset.pickShop) { res = await sb.from("inquiries").update({ shop_id: b.dataset.pickShop }).eq("id", id); if (res.error) return toast(res.error.message, "error"); return show(); }
+    if ("unpick" in b.dataset) { res = await sb.from("inquiries").update({ shop_id: null }).eq("id", id); if (res.error) return toast(res.error.message, "error"); return show(); }
+    if ("invite" in b.dataset) {
+      const r = data.find((x) => x.id === id), email = li.querySelector("[data-invite-email]").value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("メールアドレスを確かめてください。", "error");
+      if (!confirm(`「${r.shops.name}」に ${email} を招待します。お店の方であることは確認できましたか？`)) return;
+      b.disabled = true;
+      try { await callFn("invite-owner", { shop_id: r.shops.id, email, redirect_to: inviteTo() }); }
+      catch (err) { b.disabled = false; return toast("送れませんでした：" + err.message, "error"); }
+      await sb.from("inquiries").update({ status: "done" }).eq("id", id);
+      toast("招待メールを送りました。"); return show();
+    }
     if ("done" in b.dataset) res = await sb.from("inquiries").update({ status: "done" }).eq("id", id);
     else if ("trash" in b.dataset) res = await sb.from("inquiries").update({ deleted_at: new Date().toISOString() }).eq("id", id).eq("status", "done");
     else if ("restore" in b.dataset) res = await sb.from("inquiries").update({ deleted_at: null }).eq("id", id);
@@ -207,7 +250,7 @@ async function openShop(pane, id) {
     e.preventDefault();
     const btn = e.target.querySelector("button"); btn.disabled = true;
     try {
-      await callFn("invite-owner", { shop_id: id, email: e.target.email.value.trim(), redirect_to: location.origin + location.pathname.replace(/admin\/.*$/, "owner/") });
+      await callFn("invite-owner", { shop_id: id, email: e.target.email.value.trim(), redirect_to: inviteTo() });
       toast("招待メールを送りました。"); openShop(pane, id);
     } catch (err) { toast("送れませんでした：" + err.message, "error"); btn.disabled = false; }
   });

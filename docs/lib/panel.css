@@ -106,3 +106,6 @@ body.console-admin { --btn: #3d5566; }
 .console .is-busy::before { content: ""; display: inline-block; width: .9em; height: .9em; margin-right: .5em; vertical-align: -.1em;
   border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: btnspin .7s linear infinite; }
 @keyframes btnspin { to { transform: rotate(360deg); } }
+/* 問い合わせ：店舗会員の申し込み（対象の店・招待） */
+.owner-box { background: #fff8e8; border: 1px solid #f0ddb0; border-radius: 12px; padding: 10px 12px; margin: 8px 0; }
+.owner-box label { margin-bottom: 6px; }

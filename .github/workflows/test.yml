@@ -40,7 +40,7 @@ jobs:
       - name: 権限（RLS）のテスト
         run: |
           psql -v ON_ERROR_STOP=1 -q -f supabase/tests/stub_supabase.sql
-          psql -v ON_ERROR_STOP=1 -q -f supabase/migrations/0001_init.sql -f supabase/migrations/0002_harden.sql -f supabase/migrations/0004_inquiries_trash.sql -f supabase/migrations/0005_paid_tel.sql -f supabase/migrations/0006_kana_opened.sql
+          psql -v ON_ERROR_STOP=1 -q -f supabase/migrations/0001_init.sql -f supabase/migrations/0002_harden.sql -f supabase/migrations/0004_inquiries_trash.sql -f supabase/migrations/0005_paid_tel.sql -f supabase/migrations/0006_kana_opened.sql -f supabase/migrations/0012_inquiry_kind.sql
           psql -v ON_ERROR_STOP=1 -q -f supabase/tests/rls_test.sql
       - name: 初期データが読み込めるか
         run: psql -v ON_ERROR_STOP=1 -q -f supabase/seed/shops_public.sql -f supabase/seed/shops_public.sql
