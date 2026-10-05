@@ -11,7 +11,7 @@ export type Deps = {
   shopName: (shopId: string) => Promise<string>;
 };
 
-const ADMIN_URL = () => `${SITE_URL}admin/`;
+const ADMIN_URL = () => `${SITE_URL}kanri-e9bd6eaadd/`;
 
 function same(a: string, b: string) {
   if (!a || a.length !== b.length) return false;

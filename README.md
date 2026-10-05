@@ -5,7 +5,7 @@
 - 公開サイト：`https://ekimae.fukui-fukui.com/`
 - Supabase：プロジェクト `fukui-ekimae`（組織 YU_GBP・東京、ID `zynxnpwwmrxzyljrsmbs`）
 - お店の管理画面：`/owner/`（運営が招待したお店の方だけ）
-- 運営管理：`/admin/`（運営者だけ）
+- 運営管理：`/kanri-e9bd6eaadd/`（運営者だけ。推測されにくい場所。robots.txt にも書かない）
 - 投稿予約：`/yoyaku/`（Threads の予約投稿。福井の仕組みと同じもの）
 
 ```
@@ -58,7 +58,7 @@
 3. Authentication → Sign In / Providers → Email：**Allow new users to sign up をオフ**。
 4. Authentication → URL Configuration：
    - Site URL：`https://ekimae.fukui-fukui.com/`
-   - Redirect URLs：`https://ekimae.fukui-fukui.com/owner/` と `https://ekimae.fukui-fukui.com/admin/`
+   - Redirect URLs：`https://ekimae.fukui-fukui.com/owner/` と `https://ekimae.fukui-fukui.com/kanri-e9bd6eaadd/`
 5. Authentication → Emails：**SMTP を設定する**（Resend・Gmail など）。Supabase 標準のメール送信は1時間に数通までしか送れず、招待メールが届かなくなる。
    メールの文面（Invite user / Magic link）は日本語に書き換える。例：件名「ふくいエキマエ お店の管理画面へのご招待」。
 6. Authentication → Users → Add user → Create new user で、運営者（`admins` 表のアドレス）を作る。
@@ -169,7 +169,7 @@ push すると `.github/workflows/test.yml` が同じテストを GitHub Actions
 docs/                    公開サイト（GitHub Pages）
   index.html app.js styles.css config.js
   owner/                 お店の管理画面（無料：更新依頼 / 有料：編集・写真・リンク・契約）
-  admin/                 運営管理（依頼・問い合わせ・店の編集・招待・写真）
+  kanri-e9bd6eaadd/      運営管理（依頼・問い合わせ・店の編集・招待・写真）
   yoyaku/                Threads の投稿予約画面
   lib/                   管理画面の共通部品（Supabase 接続・画像の縮小）
   data/shops.json        Supabase 未設定時の表示用データ（公開項目のみ）
