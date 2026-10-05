@@ -61,10 +61,11 @@ async function render(shop) {
         </div>
       </div>
       <div class="stats">
-        <div><small>プラン</small><b>${paid ? (shop.plan === "yearly" ? "YEAR" : "MONTH") : "FREE"}</b></div>
+        <div><small>ご契約</small><b>${paid ? esc(PLANS[shop.plan]) : "無料プラン"}</b></div>
         <div><small>次回の更新日</small><b>${paid && shop.plan_until ? fmtDate(shop.plan_until) : "—"}</b></div>
         <a class="see" href="../${location.search.includes("demo") ? "?demo=1" : ""}#/shop/${encodeURIComponent(shop.slug)}" target="_blank" rel="noopener">公開ページを見る →</a>
       </div>
+      ${paid ? (sub ? '<p style="margin-top:10px"><button class="btn-ghost" id="portal" type="button">お支払い方法の変更・解約</button></p>' : '<p class="muted small" style="margin-top:10px">運営が設定した有料プランです。変更は運営にご連絡ください。</p>') : ""}
     </section>
     <div id="body"></div>`;
   $("#shop-select")?.addEventListener("change", (e) => render(shops.find((s) => s.id === e.target.value)));
@@ -220,12 +221,6 @@ async function renderPaid(body, shop, sub) {
         <label style="flex:1;min-width:200px">URL<input name="url" type="url" required pattern="https://.*" placeholder="https://" /></label>
         <label>表示名（任意）<input name="label" maxlength="20" /></label>
         <button class="btn" type="submit">追加</button></form>` : ""}
-    </section>
-
-    <section class="panel">
-      <h2><span class="en">PLAN</span>ご契約</h2>
-      <p class="muted">${PLANS[shop.plan]}${shop.plan_until ? `・次回の更新日 ${fmtDate(shop.plan_until)}` : ""}</p>
-      ${sub ? '<button class="btn-ghost" id="portal" type="button">お支払い方法の変更・解約</button>' : '<p class="muted small">運営が設定した有料プランです。変更は運営にご連絡ください。</p>'}
     </section>`;
 
   const reload = async () => {
