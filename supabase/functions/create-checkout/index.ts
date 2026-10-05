@@ -14,6 +14,11 @@ Deno.serve(handle(async (req) => {
   const { data: sub } = await admin.from("subscriptions").select("*").eq("shop_id", shop_id).maybeSingle();
   if (sub && ["active", "trialing", "past_due"].includes(sub.status)) throw new HttpError(409, "すでに有料プランのご契約があります");
 
+  // 期間限定のクーポンを自動で付ける（Secrets：STRIPE_AUTO_COUPON にクーポン ID、STRIPE_AUTO_COUPON_UNTIL に最終日 YYYY-MM-DD・日本時間）
+  const autoCoupon = Deno.env.get("STRIPE_AUTO_COUPON") ?? "";
+  const until = Deno.env.get("STRIPE_AUTO_COUPON_UNTIL") ?? "";
+  const useCoupon = Boolean(autoCoupon) && (!until || Date.now() < new Date(`${until}T23:59:59+09:00`).getTime());
+
   const back = safeReturn(return_url);
   const sep = back.includes("?") ? "&" : "?";
   const session = await s.checkout.sessions.create({
@@ -24,7 +29,8 @@ Deno.serve(handle(async (req) => {
     subscription_data: { metadata: { shop_id } },
     ...(sub?.stripe_customer_id ? { customer: sub.stripe_customer_id } : { customer_email: user.email }),
     locale: "ja",
-    allow_promotion_codes: true,
+    // クーポンの自動適用とプロモーションコード入力欄は同時に使えない
+    ...(useCoupon ? { discounts: [{ coupon: autoCoupon }] } : { allow_promotion_codes: true }),
     // Managed Payments（Stripe が販売者になる仕組み）は使わない。ふくふくプロジェクトが販売者として売る
     ...({ managed_payments: { enabled: false } } as Record<string, unknown>),
     success_url: `${back}${sep}checkout=success&shop=${shop_id}`,
