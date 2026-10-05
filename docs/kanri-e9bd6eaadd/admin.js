@@ -1,5 +1,5 @@
 // 運営管理画面：問い合わせ・更新依頼・店の編集・オーナー招待・写真の非表示
-import { sb, ready, $, esc, ZONES, PLANS, photoUrl, isPaid, fmtDate, callFn, toast, renderLogin, showWho } from "../lib/common.js?v=5";
+import { sb, ready, $, esc, ZONES, PLANS, photoUrl, isPaid, fmtDate, callFn, toast, renderLogin, showWho } from "../lib/common.js?v=6";
 
 const root = $("#root");
 const TOWNS = ["大手", "順化", "中央", "つくも", "照手", "手寄", "日之出"];
