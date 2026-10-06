@@ -15,12 +15,13 @@ def shop(slug, category="gourmet", genre="和食", **kw):
 
 class ComposeTest(unittest.TestCase):
     def test_three_slots_and_mention(self):
-        shops = [shop("a", instagram="a_official"), shop("b", genre="居酒屋", instagram="b_ig"), shop("n", "night", "バー", instagram="n_bar")]
+        shops = [shop("a", instagram="a_official"), shop("c", genre="カフェ・スイーツ", instagram="c_ig"), shop("b", genre="居酒屋", instagram="b_ig"),
+                 shop("d", genre="イタリアン・フレンチ", instagram="d_ig"), shop("n", "night", "バー", instagram="n_bar")]
         items = compose.compose(date(2026, 10, 10), shops, {"seen": [], "pr_last": {}})
-        self.assertEqual([i["scheduled_at"][11:16] for i in items], ["11:30", "17:30", "20:30"])
+        self.assertEqual([i["scheduled_at"][11:16] for i in items], ["11:30", "14:30", "17:30", "19:30", "21:30"])
         self.assertIn("https://www.instagram.com/a_official/", items[0]["text"])
         self.assertNotIn("@a_official", items[0]["text"])
-        self.assertIn("20歳未満", items[2]["text"])
+        self.assertIn("20歳未満", items[-1]["text"])
 
     def test_paid_shop_gets_pr_once_per_30_days(self):
         shops = [shop("a", instagram="a_ig"), shop("p", is_paid=True, catch="駅前の老舗"), shop("n", "night", "バー", instagram="n_ig")]
@@ -50,17 +51,25 @@ class ComposeTest(unittest.TestCase):
     def test_shared_account_is_later_and_not_mentioned(self):
         shops = [shop("own", instagram="own_ig"), shop("chain", instagram="chain_hq", instagram_shared=True), shop("n", "night", "バー", instagram="n_ig")]
         featured = {"seen": [], "pr_last": {}}
-        first = compose.compose(date(2026, 10, 1), shops, featured)[0]["text"]
-        self.assertIn("店own", first)
-        second = compose.compose(date(2026, 10, 2), shops, featured)[0]["text"]
-        self.assertIn("店chain", second)
-        self.assertNotIn("chain_hq", second)
+        items = compose.compose(date(2026, 10, 1), shops, featured)
+        # お昼は共通アカウントでない店が先。共通アカウントの店はあとの枠（晩ごはん）に回る
+        self.assertIn("店own", items[0]["text"])
+        later = "\n".join(i["text"] for i in items[1:])
+        self.assertIn("店chain", later)
+        self.assertNotIn("chain_hq", later)
 
     def test_izakaya_not_in_lunch(self):
         shops = [shop("iz", genre="居酒屋", instagram="iz_ig"), shop("wa", instagram="wa_ig"), shop("n", "night", "バー", instagram="n_ig")]
         for d in range(1, 6):
             items = compose.compose(date(2026, 10, d), shops, {"seen": [], "pr_last": {}})
             self.assertNotIn("店iz", items[0]["text"])
+
+    def test_skip_shop_closed_that_day(self):
+        # 2026-10-06 は火曜
+        shops = [shop("tue", instagram="t_ig", holiday="火曜"), shop("ok", instagram="o_ig", holiday="水曜"), shop("n", "night", "バー", instagram="n_ig")]
+        for _ in range(3):
+            items = compose.compose(date(2026, 10, 6), shops, {"seen": [], "pr_last": {}})
+            self.assertNotIn("店tue", "\n".join(i["text"] for i in items))
 
 
 if __name__ == "__main__":

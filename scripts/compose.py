@@ -4,10 +4,13 @@
     python scripts/compose.py --dry-run    # 足さずに表示だけ
     python scripts/compose.py --date 2026-10-10
 
-投稿は 1 日 3 枠。
-  11:30 ランチ（駅前・片町のグルメ）
-  17:30 有料のお店の紹介（PR 表記つき。有料店がなければ、夕方のカフェ・軽く一杯のお店）
-  20:30 夜のお店（バー・スナック・ラウンジ）
+投稿は 1 日 5 枠（代表の指示 2026-10-06「投稿回数を5回にしたい、投稿時間も調整して」）。
+  11:30 お昼（グルメ。カフェ・居酒屋・焼鳥は除く）
+  14:30 午後のひと休み（カフェ・スイーツ）
+  17:30 有料のお店の紹介（PR 表記つき。有料店がなければ、夕方に軽く一杯の居酒屋・焼鳥）
+  19:30 晩ごはん・一軒目（カフェ以外のグルメ）
+  21:30 二軒目（バー・スナック・ラウンジ）
+その日が定休日の店（定休日の欄にその曜日がある店）は選ばない。
 
 文章は AI に書かせず、データにある事実（店名・ジャンル・エリア・公式アカウント・お店が書いた紹介文）だけで作る。
 公式 Instagram があるお店は @ で紐付ける（Threads は Instagram と同じユーザー名）。
@@ -104,6 +107,18 @@ def lunch_text(shop: dict) -> str:
     return "\n".join(lines)
 
 
+def cafe_text(shop: dict) -> str:
+    return lunch_text(shop).replace("きょうのお昼", "午後のひと休み")
+
+
+def evening_text(shop: dict) -> str:
+    return lunch_text(shop).replace("きょうのお昼", "夕方のひと休み・軽く一杯")
+
+
+def dinner_text(shop: dict) -> str:
+    return lunch_text(shop).replace("きょうのお昼", "今夜の一軒目").replace("🍴", "🍽")
+
+
 def night_text(shop: dict) -> str:
     lines = [f"今夜の二軒目、{where(shop)}で。", "", f"🍸 {shop['name']}", f"{shop['genre']}"]
     if mention(shop):
@@ -146,28 +161,46 @@ def eligible(shop: dict) -> bool:
     return bool((shop.get("instagram") or "").strip()) and not shop.get("is_paid")
 
 
+WEEKDAYS = "月火水木金土日"
+
+
+def open_on(shop: dict, day: date) -> bool:
+    """定休日の欄にその曜日がある店は、その日は出さない（10/6 GINCHIYO は火曜定休）。"""
+    holiday = shop.get("holiday") or ""
+    return WEEKDAYS[day.weekday()] not in holiday
+
+
 def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     rng = random.Random(day.isoformat())
     seen = set(featured.get("seen", []))
     pr_last = featured.get("pr_last", {})
-    gourmet = [s for s in shops if s["category"] == "gourmet" and eligible(s)]
-    night = [s for s in shops if s["category"] == "night" and eligible(s)]
+    gourmet = [s for s in shops if s["category"] == "gourmet" and eligible(s) and open_on(s, day)]
+    night = [s for s in shops if s["category"] == "night" and eligible(s) and open_on(s, day)]
     paid_due = sorted(
-        (s for s in shops if s.get("is_paid") and
+        (s for s in shops if s.get("is_paid") and open_on(s, day) and
          (s["slug"] not in pr_last or (day - date.fromisoformat(pr_last[s["slug"]])).days >= PR_INTERVAL_DAYS)),
         key=lambda s: pr_last.get(s["slug"], ""))
+    drink = ("居酒屋", "焼鳥・串")
+    cafe = [x for x in gourmet if x["genre"] == "カフェ・スイーツ"]
+    # お昼の枠に居酒屋は出さない（夜だけの店が多い。10/5 しの﨑の件）
+    lunch = [x for x in gourmet if x["genre"] != "カフェ・スイーツ" and x["genre"] not in drink]
+    evening = [x for x in gourmet if x["genre"] in drink]
+    dinner = [x for x in gourmet if x["genre"] != "カフェ・スイーツ"]
 
     slots: list[tuple[str, str]] = []
-    # お昼の枠に居酒屋は出さない（夜だけの店が多い。10/5 しの﨑の件）
-    lunch = [x for x in gourmet if x["genre"] not in ("カフェ・スイーツ", "居酒屋", "焼鳥・串")]
-    if (s := pick(lunch or gourmet, seen, rng)):
-        seen.add(s["slug"]); slots.append(("11:30", lunch_text(s)))
+
+    def add(hm: str, pool: list[dict], make) -> None:
+        if (s := pick(pool, seen, rng)):
+            seen.add(s["slug"]); slots.append((hm, make(s)))
+
+    add("11:30", lunch or gourmet, lunch_text)
+    add("14:30", cafe, cafe_text)
     if paid_due:
         s = paid_due[0]; pr_last[s["slug"]] = day.isoformat(); slots.append(("17:30", pr_text(s)))
-    elif (s := pick([x for x in gourmet if x["genre"] in ("カフェ・スイーツ", "居酒屋", "焼鳥・串")], seen, rng)):
-        seen.add(s["slug"]); slots.append(("17:30", lunch_text(s).replace("きょうのお昼", "夕方のひと休み・軽く一杯")))
-    if (s := pick(night, seen, rng)):
-        seen.add(s["slug"]); slots.append(("20:30", night_text(s)))
+    else:
+        add("17:30", evening, evening_text)
+    add("19:30", dinner, dinner_text)
+    add("21:30", night, night_text)
 
     featured["seen"] = sorted(seen)
     featured["pr_last"] = pr_last
