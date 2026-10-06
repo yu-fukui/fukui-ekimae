@@ -144,6 +144,8 @@ body[data-mode="night"] .band { color: #3a2c05; }
 .t-photo { aspect-ratio: 16 / 9; background: var(--main-soft) center / cover no-repeat; position: relative; }
 .t-photo .pr-tag { position: absolute; left: 12px; bottom: 10px; }
 .t-main { display: grid; grid-template-columns: 58px 1fr; gap: 4px 14px; padding: 16px 16px 14px 20px; }
+.t-main.has-thumb { grid-template-columns: 58px 1fr 76px; }
+.t-thumb { width: 76px; height: 76px; border-radius: 12px; background: var(--main-soft) center / cover no-repeat; align-self: start; }
 .stamp { width: 56px; height: 56px; border-radius: 50%; border: 2.5px dashed var(--stamp); color: var(--stamp); align-self: start;
   display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; transform: rotate(-8deg); font-size: 1.4rem; }
 .stamp { background: var(--stamp-bg); }

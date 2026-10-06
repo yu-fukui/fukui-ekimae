@@ -174,11 +174,13 @@
   }
 
   function card(s) {
-    const top = s.is_paid && s.photos && s.photos[0];
+    // 写真：有料は上に大きく、無料（店舗会員の1枚）はカードの右に小さく
+    const pic = s.photos && s.photos[0];
+    const top = s.is_paid && pic, thumb = !s.is_paid && pic;
     return `<li class="ticket${s.is_paid ? " is-pr" : ""}">
       <a class="t-link" href="#/shop/${encodeURIComponent(s.slug)}">
         ${top ? `<div class="t-photo" style="background-image:url('${esc(photoUrl(top))}')" role="img" aria-label="${esc(top.caption || s.name)}"></div>` : ""}
-        <div class="t-main">
+        <div class="t-main${thumb ? " has-thumb" : ""}">
           ${stamp(s)}
           <div class="t-text">
             <div class="t-tags"><span class="kind"><i></i>${esc(s.genre)}</span>${openedLabel(s) ? `<span class="new-tag">NEW</span>` : ""}</div>
@@ -187,6 +189,7 @@
             ${area(s)}
             ${openedLabel(s) ? `<p class="t-opened">${esc(openedLabel(s))}</p>` : ""}
           </div>
+          ${thumb ? `<div class="t-thumb" style="background-image:url('${esc(photoUrl(thumb))}')" role="img" aria-label="${esc(thumb.caption || s.name)}"></div>` : ""}
         </div>
       </a>
       ${stub(s, false)}
@@ -264,7 +267,7 @@
     const night = s.category === "night";
     document.body.dataset.mode = night ? "night" : "day";
     setIcons(night);
-    const photos = (s.is_paid && s.photos) || [];
+    const photos = s.photos || [];   // 公開ビューが有料5枚・無料1枚に絞っている
     const links = (s.is_paid && s.links) || [];
     // 近くの同じジャンル（同じエリア・同じ区分）。有料のお店を先に。
     const near = state.shops.filter((x) => x.slug !== s.slug && x.category === s.category && x.zone === s.zone && x.genre === s.genre)

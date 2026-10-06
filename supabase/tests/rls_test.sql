@@ -49,6 +49,19 @@ do $$ begin
   insert into shop_links (shop_id,url) values ('10000000-0000-0000-0000-000000000001','https://example.com');
   raise exception 'NG: 無料なのにリンクを追加できた';
 exception when insufficient_privilege then raise notice 'OK: 無料オーナーはリンクを追加できない'; end $$;
+insert into storage.objects (bucket_id,name) values ('photos','10000000-0000-0000-0000-000000000001/a.webp');
+insert into shop_photos (shop_id,path) values ('10000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001/a.webp');
+select pg_temp.check(true, '無料オーナーは写真を1枚追加できる');
+do $$ begin
+  insert into shop_photos (shop_id,path) values ('10000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001/b.webp');
+  raise exception 'NG: 無料なのに2枚目が入ってしまった';
+exception when raise_exception then
+  if sqlerrm like 'NG:%' then raise; end if; raise notice 'OK: 無料の写真は2枚目で止まる'; end $$;
+insert into storage.objects (bucket_id,name) values ('photos','10000000-0000-0000-0000-000000000001/b.webp');
+do $$ begin
+  insert into storage.objects (bucket_id,name) values ('photos','10000000-0000-0000-0000-000000000001/c.webp');
+  raise exception 'NG: 無料なのに画像ファイルを3つ置けた';
+exception when insufficient_privilege then raise notice 'OK: 無料のお店の画像ファイルは2つまで'; end $$;
 reset role;
 
 -- 3. 有料のオーナー：紹介文は編集できる。店名やプランは変えられない（元に戻る）。リンク・写真は上限まで。
@@ -96,6 +109,7 @@ reset role;
 set role anon; select set_config('request.jwt.claims','',false);
 select pg_temp.check((select json_array_length(photos) from public_shops where slug='paid-shop') = 5, '公開ビューに写真5枚');
 select pg_temp.check((select description from public_shops where slug='free-shop') = '', '無料の店の紹介文は公開されない');
+select pg_temp.check((select json_array_length(photos) from public_shops where slug='free-shop') = 1, '無料の店は写真1枚が公開される');
 reset role;
 
 -- 電話番号（0005_paid_tel.sql）：公開ビューでは有料の店だけ見える。有料オーナーは編集できる

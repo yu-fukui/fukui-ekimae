@@ -84,7 +84,7 @@ async function render(shop) {
   }));
   const body = $("#body");
   sb.from("shop_photos").select("path").eq("shop_id", shop.id).order("sort").limit(1).then(({ data }) => {
-    if (paid && data?.[0]) $("#shop-thumb").style.backgroundImage = `url('${photoUrl(data[0].path)}')`, ($("#shop-thumb").textContent = "");
+    if (data?.[0]) $("#shop-thumb").style.backgroundImage = `url('${photoUrl(data[0].path)}')`, ($("#shop-thumb").textContent = "");
   });
   $("#portal")?.addEventListener("click", async (e) => {
     const b = e.currentTarget, label = b.textContent;
@@ -105,8 +105,12 @@ function campaignNote(sub) {
 
 // ───────── 無料プラン ─────────
 async function renderFree(body, shop) {
-  const { data: reqs } = await sb.from("update_requests").select("*").eq("shop_id", shop.id).order("created_at", { ascending: false }).limit(10);
+  const [{ data: reqs }, { data: photos }] = await Promise.all([
+    sb.from("update_requests").select("*").eq("shop_id", shop.id).order("created_at", { ascending: false }).limit(10),
+    sb.from("shop_photos").select("*").eq("shop_id", shop.id).order("sort"),
+  ]);
   body.innerHTML = `
+    ${photoPanel(photos || [], 1)}
     <section class="panel">
       <h2><span class="en">REQUEST</span>掲載内容の更新依頼</h2>
       <p class="muted">店名・ジャンル・Instagram などを直したいときは、ここから運営に依頼してください。確認して反映します。</p>
@@ -128,6 +132,7 @@ async function renderFree(body, shop) {
     toast("依頼を送りました。");
     renderFree(body, shop);
   });
+  bindPhotos(shop, photos || [], 1, () => renderFree(body, shop));
   bindUpgrade(shop);
 }
 
@@ -204,25 +209,7 @@ async function renderPaid(body, shop, sub) {
       <p class="muted small">店名・エリア・ジャンル・住所を変えたいときは、運営にご連絡ください。</p>
     </section>
 
-    <section class="panel">
-      <h2><span class="en">PHOTOS</span>写真（${photos.length}/${MAX_PHOTOS}枚）</h2>
-      <p class="muted small">1枚目がトップ写真になります。写真は自動で縮小され、撮影場所などの情報は消えます。</p>
-      <div class="photos" id="photos">${photos.map((p, i) => `
-        <div class="photo" data-id="${p.id}">
-          <img src="${esc(photoUrl(p.path))}" alt="${esc(p.caption)}" loading="lazy" />
-          <div class="tools">
-            ${p.is_hidden ? '<span class="badge off">運営により非表示</span>' : ""}
-            <input data-caption value="${esc(p.caption)}" maxlength="60" placeholder="説明（例：名物のおでん）" />
-            <div class="row">
-              <button class="icon-btn" data-move="-1" ${i === 0 ? "disabled" : ""} aria-label="前へ">←</button>
-              <button class="icon-btn" data-move="1" ${i === photos.length - 1 ? "disabled" : ""} aria-label="後ろへ">→</button>
-              <button class="icon-btn danger" data-del>削除</button>
-            </div>
-          </div>
-        </div>`).join("")}
-        ${photos.length < MAX_PHOTOS ? `<label class="add-photo"><span>＋<br>写真を追加<br><small>あと${MAX_PHOTOS - photos.length}枚</small></span><input id="photo-input" type="file" accept="image/*" multiple hidden /></label>` : ""}</div>
-      <p class="form-msg" id="photo-msg" role="status"></p>
-    </section>
+    ${photoPanel(photos, MAX_PHOTOS)}
 
     <section class="panel">
       <h2><span class="en">LINKS</span>リンク（${links.length}/${MAX_LINKS}件）</h2>
@@ -256,8 +243,63 @@ async function renderPaid(body, shop, sub) {
     error ? toast("保存できませんでした：" + error.message, "error") : (toast("保存しました。"), reload());
   });
 
+  bindPhotos(shop, photos, MAX_PHOTOS, reload);
+
+  $("#link-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const sort = links.length ? Math.max(...links.map((l) => l.sort)) + 1 : 0;
+    const { error } = await sb.from("shop_links").insert({ shop_id: shop.id, kind: f.kind.value, url: f.url.value.trim(), label: f.label.value.trim(), sort });
+    error ? toast("追加できませんでした：" + error.message, "error") : reload();
+  });
+  $("#links").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button"); if (!btn) return;
+    const id = btn.closest("li").dataset.id;
+    const idx = links.findIndex((l) => l.id === id);
+    if ("ldel" in btn.dataset) { await sb.from("shop_links").delete().eq("id", id); return reload(); }
+    await swap("shop_links", links, idx, idx + Number(btn.dataset.lmove));
+    reload();
+  });
+
+}
+
+// 並び順を入れ替える（a と b の sort を交換）
+async function swap(table, items, a, b) {
+  if (b < 0 || b >= items.length) return;
+  const sa = items[a].sort === items[b].sort ? a : items[a].sort, sb_ = items[a].sort === items[b].sort ? b : items[b].sort;
+  await sb.from(table).update({ sort: sb_ }).eq("id", items[a].id);
+  await sb.from(table).update({ sort: sa }).eq("id", items[b].id);
+}
+
+// ───────── 写真（有料5枚・無料1枚。枚数はデータベース側でも止める） ─────────
+function photoPanel(photos, max) {
+  const free = max === 1;
+  return `
+    <section class="panel">
+      <h2><span class="en">PHOTO${free ? "" : "S"}</span>写真（${photos.length}/${max}枚）</h2>
+      <p class="muted small">${free ? "お店の写真を1枚載せられます。一覧とお店のページに出ます。有料プランにすると5枚まで載せられます。" : "1枚目がトップ写真になります。"}写真は自動で縮小され、撮影場所などの情報は消えます。</p>
+      <div class="photos" id="photos">${photos.map((p, i) => `
+        <div class="photo" data-id="${p.id}">
+          <img src="${esc(photoUrl(p.path))}" alt="${esc(p.caption)}" loading="lazy" />
+          <div class="tools">
+            ${p.is_hidden ? '<span class="badge off">運営により非表示</span>' : ""}
+            ${free && i > 0 ? '<span class="badge">無料プランでは出ません</span>' : ""}
+            <input data-caption value="${esc(p.caption)}" maxlength="60" placeholder="説明（例：名物のおでん）" />
+            <div class="row">
+              ${free ? "" : `<button class="icon-btn" data-move="-1" ${i === 0 ? "disabled" : ""} aria-label="前へ">←</button>
+              <button class="icon-btn" data-move="1" ${i === photos.length - 1 ? "disabled" : ""} aria-label="後ろへ">→</button>`}
+              <button class="icon-btn danger" data-del>削除</button>
+            </div>
+          </div>
+        </div>`).join("")}
+        ${photos.length < max ? `<label class="add-photo"><span>＋<br>写真を追加<br><small>あと${max - photos.length}枚</small></span><input id="photo-input" type="file" accept="image/*" ${max > 1 ? "multiple" : ""} hidden /></label>` : ""}</div>
+      <p class="form-msg" id="photo-msg" role="status"></p>
+    </section>`;
+}
+
+function bindPhotos(shop, photos, max, reload) {
   $("#photo-input")?.addEventListener("change", async (e) => {
-    const files = [...e.target.files].slice(0, MAX_PHOTOS - photos.length);
+    const files = [...e.target.files].slice(0, max - photos.length);
     const msg = $("#photo-msg");
     let sort = photos.length ? Math.max(...photos.map((p) => p.sort)) + 1 : 0;
     for (const [i, file] of files.entries()) {
@@ -296,28 +338,4 @@ async function renderPaid(body, shop, sub) {
     reload();
   });
 
-  $("#link-form")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    const sort = links.length ? Math.max(...links.map((l) => l.sort)) + 1 : 0;
-    const { error } = await sb.from("shop_links").insert({ shop_id: shop.id, kind: f.kind.value, url: f.url.value.trim(), label: f.label.value.trim(), sort });
-    error ? toast("追加できませんでした：" + error.message, "error") : reload();
-  });
-  $("#links").addEventListener("click", async (e) => {
-    const btn = e.target.closest("button"); if (!btn) return;
-    const id = btn.closest("li").dataset.id;
-    const idx = links.findIndex((l) => l.id === id);
-    if ("ldel" in btn.dataset) { await sb.from("shop_links").delete().eq("id", id); return reload(); }
-    await swap("shop_links", links, idx, idx + Number(btn.dataset.lmove));
-    reload();
-  });
-
-}
-
-// 並び順を入れ替える（a と b の sort を交換）
-async function swap(table, items, a, b) {
-  if (b < 0 || b >= items.length) return;
-  const sa = items[a].sort === items[b].sort ? a : items[a].sort, sb_ = items[a].sort === items[b].sort ? b : items[b].sort;
-  await sb.from(table).update({ sort: sb_ }).eq("id", items[a].id);
-  await sb.from(table).update({ sort: sa }).eq("id", items[b].id);
 }
