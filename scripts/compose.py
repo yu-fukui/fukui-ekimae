@@ -4,12 +4,12 @@
     python scripts/compose.py --dry-run    # 足さずに表示だけ
     python scripts/compose.py --date 2026-10-10
 
-投稿は 1 日 5 枠（代表の指示 2026-10-06「投稿回数を5回にしたい、投稿時間も調整して」）。
+投稿は 1 日 5 枠（代表の指示 2026-10-06「投稿回数を5回にしたい、投稿時間も調整して」、10/6「後半3件を1時間早めて」）。
   11:30 お昼（グルメ。カフェ・居酒屋・焼鳥は除く）
   14:30 午後のひと休み（カフェ・スイーツ）
-  17:30 有料のお店の紹介（PR 表記つき。有料店がなければ、夕方に軽く一杯の居酒屋・焼鳥）
-  19:30 晩ごはん・一軒目（カフェ以外のグルメ）
-  21:30 二軒目（バー・スナック・ラウンジ）
+  16:30 有料のお店の紹介（PR 表記つき。有料店がなければ、夕方に軽く一杯の居酒屋・焼鳥）
+  18:30 晩ごはん・一軒目（カフェ以外のグルメ）
+  20:30 二軒目（バー・スナック・ラウンジ）
 その日が定休日の店（定休日の欄にその曜日がある店）は選ばない。
 
 文章は AI に書かせず、データにある事実（店名・ジャンル・エリア・公式アカウント・お店が書いた紹介文）だけで作る。
@@ -196,11 +196,11 @@ def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     add("11:30", lunch or gourmet, lunch_text)
     add("14:30", cafe, cafe_text)
     if paid_due:
-        s = paid_due[0]; pr_last[s["slug"]] = day.isoformat(); slots.append(("17:30", pr_text(s)))
+        s = paid_due[0]; pr_last[s["slug"]] = day.isoformat(); slots.append(("16:30", pr_text(s)))
     else:
-        add("17:30", evening, evening_text)
-    add("19:30", dinner, dinner_text)
-    add("21:30", night, night_text)
+        add("16:30", evening, evening_text)
+    add("18:30", dinner, dinner_text)
+    add("20:30", night, night_text)
 
     featured["seen"] = sorted(seen)
     featured["pr_last"] = pr_last
