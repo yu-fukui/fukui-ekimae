@@ -27,8 +27,8 @@ class ComposeTest(unittest.TestCase):
         shops = [shop("a", instagram="a_ig"), shop("p", is_paid=True, catch="駅前の老舗"), shop("n", "night", "バー", instagram="n_ig")]
         featured = {"seen": [], "pr_last": {}}
         first = compose.compose(date(2026, 10, 10), shops, featured)
-        self.assertTrue(first[1]["text"].startswith("【PR】"))
-        self.assertIn("駅前の老舗", first[1]["text"])
+        self.assertTrue(any(i["text"].startswith("【PR】") for i in first))
+        self.assertIn("駅前の老舗", "\n".join(i["text"] for i in first))
         again = compose.compose(date(2026, 10, 20), shops, featured)
         self.assertFalse(any(i["text"].startswith("【PR】") for i in again))
         later = compose.compose(date(2026, 11, 9), shops, featured)
@@ -70,6 +70,13 @@ class ComposeTest(unittest.TestCase):
         for _ in range(3):
             items = compose.compose(date(2026, 10, 6), shops, {"seen": [], "pr_last": {}})
             self.assertNotIn("店tue", "\n".join(i["text"] for i in items))
+
+    def test_question_slot(self):
+        shops = [shop("a", instagram="a_ig"), shop("n", "night", "バー", instagram="n_ig")]
+        items = compose.compose(date(2026, 10, 8), shops, {"seen": [], "pr_last": {}})
+        q = [i for i in items if i["scheduled_at"][11:16] == "14:30"][0]["text"]
+        self.assertIn(q, compose.QUESTIONS)
+        self.assertNotIn("http", q)
 
 
 if __name__ == "__main__":
