@@ -65,8 +65,7 @@
   const telHref = (t) => String(t).replace(/[^0-9+]/g, "");
   function igUrl(h) { return `https://www.instagram.com/${encodeURIComponent(h)}/`; }
 
-  // ---- Google の口コミの星（試験中）。代表の指示 2026-10-08「Googleの口コミの星だけでいいかな」。確認が終わったら複製を管理画面で非表示にする ----
-  const GOOGLE_PREVIEW = new Set(["s4bb210af-gtest"]);
+  // ---- Google の口コミの星。代表の指示 2026-10-08「Googleの口コミの星だけでいいかな」「全体に反映して」。place_id が登録されたお店だけ出る ----
   async function loadGoogle(slug) {
     const box = $("#g-block");
     if (!box || !hasDb) return;
@@ -251,7 +250,7 @@
   }
 
   function renderDetail(slug) {
-    const s = state.shops.find((x) => x.slug === slug) || (state.preview || []).find((x) => x.slug === slug);
+    const s = state.shops.find((x) => x.slug === slug);
     const el = $("#detail");
     if (!s) {
       // 掲載をやめたお店や、URL の打ち間違い
@@ -306,7 +305,7 @@
           <a class="d-btn" href="${mapUrl(s)}" target="_blank" rel="noopener">${svg("map")}<span><b>地図で見る</b><small>Googleマップ</small></span></a>
           ${links.map((l) => `<a class="d-btn" href="${esc(l.url)}" target="_blank" rel="noopener">${svg("link")}<span><b>${esc(l.label || LINK_LABEL[l.kind] || "リンク")}</b><small>${esc(LINK_LABEL[l.kind] || "")}</small></span></a>`).join("")}
         </div>
-        ${GOOGLE_PREVIEW.has(s.slug) ? '<p class="g-block" id="g-block" aria-busy="true"></p>' : ""}
+        <p class="g-block" id="g-block" aria-busy="true"></p>
         ${s.is_paid && s.description ? `<section class="d-block"><h2><span class="en">MESSAGE</span>お店から</h2><p class="d-desc">${esc(s.description)}</p></section>` : ""}
         <section class="d-block">
           <h2><span class="en">INFO</span>店舗情報</h2>
@@ -330,7 +329,7 @@
     el.hidden = false;
     document.title = `${s.name}｜ふくいエキマエ`;
     window.scrollTo(0, 0);
-    if (GOOGLE_PREVIEW.has(s.slug)) loadGoogle(s.slug);
+    loadGoogle(s.slug);
     const slides = $("#d-slides");
     if (slides) {
       slides.addEventListener("scroll", () => {
@@ -470,8 +469,7 @@
   Promise.all([load(), loadDemo()])
     .then(([rows, extra]) => {
       // Google 表示の試験用の複製は一覧に出さない（URL を知っている人だけが開ける）
-      state.preview = rows.filter((s) => GOOGLE_PREVIEW.has(s.slug));
-      state.shops = sortShops(extra.concat(rows.filter((s) => !GOOGLE_PREVIEW.has(s.slug))));
+      state.shops = sortShops(extra.concat(rows));
       fillShopNames(); route();
     })
     .catch((err) => {
