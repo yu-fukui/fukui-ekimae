@@ -15,14 +15,15 @@ import json
 import math
 import os
 import sys
+import urllib.error
 import urllib.request
 from collections import Counter
 from pathlib import Path
 
 URL = "https://places.googleapis.com/v1/places:searchNearby"
 FIELDS = "places.id,places.displayName,places.formattedAddress,places.primaryType,places.businessStatus"
-TYPES = ["restaurant", "cafe", "bar", "coffee_shop", "bakery", "night_club", "pub", "wine_bar",
-         "japanese_restaurant", "ramen_restaurant", "sushi_restaurant", "izakaya_restaurant"]
+# 和食・ラーメン・寿司などは種類に「restaurant」も持っているので、ここで拾える
+TYPES = ["restaurant", "cafe", "bar", "bakery", "night_club", "meal_takeaway"]
 TOWNS = ("中央", "大手", "順化")
 # 範囲（福井駅〜片町の周り。3つの町を少し大きめに囲む）
 SOUTH, NORTH, WEST, EAST = 36.0555, 36.0705, 136.2090, 136.2340
@@ -40,8 +41,11 @@ def nearby(lat: float, lng: float, radius: float, types: list[str]) -> list[dict
     req = urllib.request.Request(URL, data=json.dumps(body).encode(), method="POST", headers={
         "Content-Type": "application/json", "X-Goog-Api-Key": os.environ["GOOGLE_PLACES_API_KEY"],
         "X-Goog-FieldMask": FIELDS})
-    with urllib.request.urlopen(req, timeout=30) as res:
-        return json.load(res).get("places", [])
+    try:
+        with urllib.request.urlopen(req, timeout=30) as res:
+            return json.load(res).get("places", [])
+    except urllib.error.HTTPError as e:
+        sys.exit(f"Google がエラーを返しました（{e.code}）: {e.read().decode()[:500]}")
 
 
 def search(lat: float, lng: float, radius: float, found: dict) -> None:
