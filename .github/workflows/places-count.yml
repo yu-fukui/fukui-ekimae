@@ -1,0 +1,29 @@
+name: Google のお店を数える（中央・大手・順化）
+
+# 運営だけが見る調べもの。手で起動するだけ。結果は成果物（7日で消える）に置き、リポジトリには残さない。
+on:
+  workflow_dispatch:
+    inputs:
+      max_calls:
+        description: "問い合わせ回数の上限（料金の上限）"
+        required: false
+        default: "800"
+
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 数える
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          MAX_CALLS: ${{ github.event.inputs.max_calls }}
+        run: python scripts/places_count.py | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: places_3towns
+          path: out/places_3towns.csv
+          retention-days: 7
