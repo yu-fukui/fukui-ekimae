@@ -64,6 +64,12 @@ class ComposeTest(unittest.TestCase):
             items = compose.compose(date(2026, 10, d), shops, {"seen": [], "pr_last": {}})
             self.assertNotIn("店iz", items[0]["text"])
 
+    def test_skip_shop_closed_on_holiday(self):
+        self.assertFalse(compose.open_on({"holiday": "日曜・祝日"}, date(2026, 10, 12)))
+        self.assertTrue(compose.open_on({"holiday": "日曜・祝日"}, date(2026, 10, 13)))
+        self.assertTrue(compose.open_on({"holiday": "火曜（祝日は営業）"}, date(2026, 10, 12)))
+        self.assertTrue(compose.open_on({"holiday": "火曜"}, date(2026, 10, 12)))
+
     def test_skip_shop_closed_that_day(self):
         # 2026-10-06 は火曜
         shops = [shop("tue", instagram="t_ig", holiday="火曜"), shop("ok", instagram="o_ig", holiday="水曜"), shop("n", "night", "バー", instagram="n_ig")]
