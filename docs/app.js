@@ -65,6 +65,43 @@
   const telHref = (t) => String(t).replace(/[^0-9+]/g, "");
   function igUrl(h) { return `https://www.instagram.com/${encodeURIComponent(h)}/`; }
 
+  // ---- Google の情報（試験中）。代表の指示 2026-10-08。確認が終わったら複製を管理画面で非表示にする ----
+  const GOOGLE_PREVIEW = new Set(["s4bb210af-gtest"]);
+  const G_FEAT = { reservable: "予約できる", servesLunch: "ランチ", servesDinner: "ディナー", takeout: "テイクアウト",
+    servesBeer: "ビール", servesWine: "ワイン", goodForGroups: "グループ向き", goodForChildren: "子ども連れ", acceptsCreditCards: "カード可" };
+  async function loadGoogle(slug) {
+    const box = $("#g-block");
+    if (!box || !hasDb) return;
+    try {
+      const res = await fetch(`${cfg.supabaseUrl}/functions/v1/google-place`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: cfg.supabaseAnonKey, Authorization: `Bearer ${cfg.supabaseAnonKey}` },
+        body: JSON.stringify({ slug }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const g = await res.json();
+      if (!document.body.contains(box)) return;
+      const n = Math.round(g.rating || 0);
+      const feats = Object.entries(g.features || {}).filter(([, v]) => v === true).map(([k]) => G_FEAT[k]).filter(Boolean);
+      box.removeAttribute("aria-busy");
+      box.innerHTML = `<h2><span class="en">GOOGLE</span>Google の情報</h2>
+        <div class="g-head">
+          <span class="g-rate">${g.rating ?? "—"}</span><span class="g-stars" aria-label="星 ${g.rating ?? "なし"}">${"★".repeat(n)}${"☆".repeat(5 - n)}</span>
+          <span class="g-count">口コミ ${g.count || 0} 件</span>
+          ${g.openNow == null ? "" : `<span class="g-open ${g.openNow ? "on" : "off"}">${g.openNow ? "いま営業中" : "いまは営業時間外"}</span>`}
+        </div>
+        ${g.photos?.length ? `<div class="g-photos">${g.photos.map((p) => `<figure><img src="${esc(p.src)}" alt="${esc(g.name || "")}の写真" loading="lazy" /><figcaption>写真：${p.byUri ? `<a href="${esc(p.byUri)}" target="_blank" rel="noopener">${esc(p.by)}</a>` : esc(p.by)}</figcaption></figure>`).join("")}</div>` : ""}
+        ${g.hours?.length ? `<div><h3 class="g-sub">営業時間（Google）</h3><ul class="g-hours">${g.hours.map((h) => `<li>${esc(h)}</li>`).join("")}</ul></div>` : ""}
+        ${g.price ? `<p class="g-line"><b>予算</b> ${Number(g.price[0]).toLocaleString()}〜${Number(g.price[1]).toLocaleString()}円（1人あたり）</p>` : ""}
+        ${feats.length ? `<div class="g-feat">${feats.map((f) => `<span>${esc(f)}</span>`).join("")}</div>` : ""}
+        ${g.reviews?.length ? `<div class="g-revs">${g.reviews.map((v) => `<blockquote>${esc(v.text.length > 140 ? v.text.slice(0, 140) + "…" : v.text)}<cite>${"★".repeat(v.rating || 0)} ${v.byUri ? `<a href="${esc(v.byUri)}" target="_blank" rel="noopener">${esc(v.by)}</a>` : esc(v.by)}・${esc(v.when || "")}</cite></blockquote>`).join("")}</div>` : ""}
+        <p class="g-attr"><span>Google の情報（表示のたびに Google から取得）</span><a href="${esc(g.mapsUri || "")}" target="_blank" rel="noopener">Google マップで口コミをすべて見る</a></p>`;
+    } catch (e) {
+      box.removeAttribute("aria-busy");
+      box.innerHTML = '<h2><span class="en">GOOGLE</span>Google の情報</h2><p class="d-small">Google の情報を読み込めませんでした。</p>';
+    }
+  }
+
   async function load() {
     if (hasDb) {
       // Supabase は 1 回に 1,000 件までしか返さないので、1,000 件ずつ続けて読む
@@ -226,7 +263,7 @@
   }
 
   function renderDetail(slug) {
-    const s = state.shops.find((x) => x.slug === slug);
+    const s = state.shops.find((x) => x.slug === slug) || (state.preview || []).find((x) => x.slug === slug);
     const el = $("#detail");
     if (!s) {
       // 掲載をやめたお店や、URL の打ち間違い
@@ -281,6 +318,7 @@
           <a class="d-btn" href="${mapUrl(s)}" target="_blank" rel="noopener">${svg("map")}<span><b>地図で見る</b><small>Googleマップ</small></span></a>
           ${links.map((l) => `<a class="d-btn" href="${esc(l.url)}" target="_blank" rel="noopener">${svg("link")}<span><b>${esc(l.label || LINK_LABEL[l.kind] || "リンク")}</b><small>${esc(LINK_LABEL[l.kind] || "")}</small></span></a>`).join("")}
         </div>
+        ${GOOGLE_PREVIEW.has(s.slug) ? '<section class="d-block g-block" id="g-block" aria-busy="true"><h2><span class="en">GOOGLE</span>Google の情報</h2><p class="d-small">Google から読み込んでいます…</p></section>' : ""}
         ${s.is_paid && s.description ? `<section class="d-block"><h2><span class="en">MESSAGE</span>お店から</h2><p class="d-desc">${esc(s.description)}</p></section>` : ""}
         <section class="d-block">
           <h2><span class="en">INFO</span>店舗情報</h2>
@@ -304,6 +342,7 @@
     el.hidden = false;
     document.title = `${s.name}｜ふくいエキマエ`;
     window.scrollTo(0, 0);
+    if (GOOGLE_PREVIEW.has(s.slug)) loadGoogle(s.slug);
     const slides = $("#d-slides");
     if (slides) {
       slides.addEventListener("scroll", () => {
@@ -441,7 +480,12 @@
   }
 
   Promise.all([load(), loadDemo()])
-    .then(([rows, extra]) => { state.shops = sortShops(extra.concat(rows)); fillShopNames(); route(); })
+    .then(([rows, extra]) => {
+      // Google 表示の試験用の複製は一覧に出さない（URL を知っている人だけが開ける）
+      state.preview = rows.filter((s) => GOOGLE_PREVIEW.has(s.slug));
+      state.shops = sortShops(extra.concat(rows.filter((s) => !GOOGLE_PREVIEW.has(s.slug))));
+      fillShopNames(); route();
+    })
     .catch((err) => {
       $("#cards").removeAttribute("aria-busy");
       $("#cards").innerHTML = `<li class="empty"><b>お店の情報を読み込めませんでした</b><p>通信の状態を確かめて、もう一度お試しください。${/^エラー \d+$/.test(err.message) ? `<br><small>（${esc(err.message)}）</small>` : ""}</p>

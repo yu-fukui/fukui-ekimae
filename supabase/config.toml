@@ -14,3 +14,6 @@ enable_signup = false   # 自分で登録はできない。運営の招待だけ
 
 [auth.email]
 enable_signup = false
+
+[functions.google-place]
+verify_jwt = true   # サイトから公開キー（anon）で呼ばれる。対象は試験中のお店だけ

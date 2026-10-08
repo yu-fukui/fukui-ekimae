@@ -1,0 +1,31 @@
+name: Google でお店の閉業を確かめる
+
+# 運営だけが見る調べもの。手で起動するだけ。結果は成果物（7日で消える）とログに置き、リポジトリには残さない。
+on:
+  workflow_dispatch:
+    inputs:
+      max_calls:
+        description: "問い合わせ回数の上限（料金の上限）"
+        required: false
+        default: "1200"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 確かめる
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          MAX_CALLS: ${{ github.event.inputs.max_calls }}
+        run: |
+          set -o pipefail
+          python scripts/places_closed_check.py | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: closed_check
+          path: out/closed_check.csv
+          retention-days: 7
