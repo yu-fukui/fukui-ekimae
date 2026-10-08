@@ -1,0 +1,30 @@
+name: Google で電話番号からお店を確かめる
+
+# 運営だけが見る調べもの。手で起動するだけ。結果はログに place_id だけを出し、リポジトリには残さない。
+on:
+  workflow_dispatch:
+    inputs:
+      tels:
+        description: "slug:電話番号 をカンマでつないだもの"
+        required: true
+      max_calls:
+        description: "問い合わせ回数の上限（料金の上限）"
+        required: false
+        default: "400"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 確かめる
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          TELS: ${{ github.event.inputs.tels }}
+          MAX_CALLS: ${{ github.event.inputs.max_calls }}
+        run: |
+          set -o pipefail
+          python scripts/places_phone_check.py
