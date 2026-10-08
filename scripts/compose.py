@@ -251,6 +251,8 @@ def open_on(shop: dict, day: date) -> bool:
 
 
 def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
+    # 試験用の複製（slug が -gtest で終わる。例：洋食堂の Google 表示テスト）は投稿に出さない。有料にしても PR に選ばない
+    shops = [s for s in shops if not s["slug"].endswith("-gtest")]
     rng = random.Random(day.isoformat())
     seen = set(featured.get("seen", []))
     pr_last = featured.get("pr_last", {})

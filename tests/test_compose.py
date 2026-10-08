@@ -78,6 +78,12 @@ class ComposeTest(unittest.TestCase):
         self.assertIn(q, compose.QUESTIONS)
         self.assertNotIn("http", q)
 
+    def test_skip_test_copy(self):
+        shops = [shop("x-gtest", is_paid=True, instagram="x_ig"), shop("a", instagram="a_ig"), shop("n", "night", "バー", instagram="n_ig")]
+        for d in range(1, 4):
+            items = compose.compose(date(2026, 10, d), shops, {"seen": [], "pr_last": {}})
+            self.assertNotIn("店x-gtest", "\n".join(i["text"] for i in items))
+
 
 if __name__ == "__main__":
     unittest.main()
