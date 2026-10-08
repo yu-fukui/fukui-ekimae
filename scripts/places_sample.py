@@ -47,5 +47,6 @@ if __name__ == "__main__":
         sys.exit("GOOGLE_PLACES_API_KEY がありません")
     out = {q: search(q) for q in sys.argv[1:]}
     print("@@@SAMPLE_JSON_BEGIN")
-    print(json.dumps(out, ensure_ascii=False))
+    # 1行が長すぎるとログから落ちるので、行を分けて出す
+    print(json.dumps(out, ensure_ascii=False, indent=1))
     print("@@@SAMPLE_JSON_END")
