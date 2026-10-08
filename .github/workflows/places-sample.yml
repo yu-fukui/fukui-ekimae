@@ -7,6 +7,10 @@ on:
       queries:
         description: "店名と住所（| で区切る）"
         required: true
+      photos:
+        description: "1店あたりの写真の枚数（0なら取らない）"
+        required: false
+        default: "0"
 
 jobs:
   sample:
@@ -20,6 +24,7 @@ jobs:
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
           QUERIES: ${{ github.event.inputs.queries }}
+          PHOTOS: ${{ github.event.inputs.photos }}
         run: |
           IFS='|' read -ra Q <<< "$QUERIES"
           python scripts/places_sample.py "${Q[@]}"
