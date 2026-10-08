@@ -1,0 +1,25 @@
+name: Google のお店の詳細をサンプルで取る
+
+# 運営だけが見るデモ用。手で起動するだけ。結果はログにだけ出し、リポジトリには残さない。
+on:
+  workflow_dispatch:
+    inputs:
+      queries:
+        description: "店名と住所（| で区切る）"
+        required: true
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 取る
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          QUERIES: ${{ github.event.inputs.queries }}
+        run: |
+          IFS='|' read -ra Q <<< "$QUERIES"
+          python scripts/places_sample.py "${Q[@]}"
