@@ -153,11 +153,11 @@ async function showInquiries(pane) {
 async function showShops(pane) {
   pane.innerHTML = `<section class="panel"><div class="spread"><h2><span class="en">SHOPS</span>店を探す</h2>${catSeg()}</div>
     <div class="row"><input id="shop-q" placeholder="店名・ふりがなで検索" style="flex:1" />
-      <select id="shop-f"><option value="">すべて</option><option value="paid">有料</option><option value="hidden">非表示</option><option value="members">オーナーあり</option></select>
+      <select id="shop-f"><option value="">すべて</option><option value="paid">有料</option><option value="hidden">非表示</option><option value="members">オーナーあり</option><option value="gcheck">Google 要確認</option></select>
       <button class="btn-ghost" id="shop-new">店を追加</button></div>
     <div id="shop-results" style="margin-top:10px"></div></section><div id="shop-edit"></div>`;
   const run = async () => {
-    let q = sb.from("shops").select("id,name,zone,town,genre,category,plan,plan_until,is_hidden,shop_members(email)").order("name").limit(50);
+    let q = sb.from("shops").select("id,name,zone,town,genre,category,plan,plan_until,is_hidden,google_check,google_place_id,shop_members(email)").order("name").limit($("#shop-f").value === "gcheck" ? 400 : 50);
     const v = $("#shop-q").value.trim(), f = $("#shop-f").value;
     if (cat) q = q.eq("category", cat);
     pane.querySelectorAll(".cat-seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cat === cat)));
@@ -169,12 +169,13 @@ async function showShops(pane) {
     }
     if (f === "paid") q = q.neq("plan", "free");
     if (f === "hidden") q = q.eq("is_hidden", true);
+    if (f === "gcheck") q = q.eq("google_check", "要確認").eq("is_hidden", false);
     const { data, error } = await q;
     if (error) return toast(error.message, "error");
     const rows = f === "members" ? data.filter((s) => s.shop_members.length) : data;
-    $("#shop-results").innerHTML = `<table class="grid"><tbody>${rows.map((s) => `
+    $("#shop-results").innerHTML = `${f === "gcheck" ? `<p class="small muted">${rows.length} 件。Google の候補が同じ店か確かめきれなかったお店です。店を開いて「Google の星」で決めてください。</p>` : ""}<table class="grid"><tbody>${rows.map((s) => `
       <tr><td><a href="#" data-open="${s.id}">${esc(s.name)}</a></td><td class="small nw">${s.category === "night" ? "夜" : "グルメ"}・${esc(ZONES[s.zone])}・${esc(s.town)}</td>
-      <td class="small">${isPaid(s) ? '<span class="badge paid">有料</span>' : ""}${s.is_hidden ? '<span class="badge off">非表示</span>' : ""}${s.shop_members.length ? ` 👤${s.shop_members.length}` : ""}</td></tr>`).join("")}</tbody></table>`;
+      <td class="small">${isPaid(s) ? '<span class="badge paid">有料</span>' : ""}${s.is_hidden ? '<span class="badge off">非表示</span>' : ""}${s.google_check ? '<span class="badge off">Google 要確認</span>' : s.google_place_id ? " ★" : ""}${s.shop_members.length ? ` 👤${s.shop_members.length}` : ""}</td></tr>`).join("")}</tbody></table>`;
   };
   let t; $("#shop-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(run, 250); });
   $("#shop-f").addEventListener("change", run);
@@ -182,6 +183,20 @@ async function showShops(pane) {
   $("#shop-new").addEventListener("click", () => openShop(pane, null));
   bindCat(pane, run);
   run();
+}
+
+// Google の口コミの星（代表の指示 2026-10-08）。保存してよいのは place_id だけなので、候補は Google マップで開いて確かめる
+const gmap = (pid) => `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(pid)}`;
+function googleBox(s) {
+  const st = s.google_place_id ? "星を表示中" : s.google_check === "要確認" ? "要確認（Google の候補が同じ店か分からない）" : s.google_check === "別の店" ? "別の店（星は出さない）" : "Google の店が見つかっていない";
+  return `<h3>Google の星</h3>
+    <p class="small">${esc(st)}
+      ${s.google_place_id ? ` <a href="${gmap(s.google_place_id)}" target="_blank" rel="noopener">Google マップで見る</a>` : ""}
+      ${!s.google_place_id && s.google_candidate_id ? ` <a href="${gmap(s.google_candidate_id)}" target="_blank" rel="noopener">候補を Google マップで見る</a>` : ""}</p>
+    <div class="row">
+      ${!s.google_place_id && s.google_candidate_id ? '<button type="button" class="btn-ghost" data-gset="same">同じ店（星を出す）</button><button type="button" class="btn-ghost" data-gset="other">別の店（星を出さない）</button>' : ""}
+      ${s.google_place_id ? '<button type="button" class="btn-ghost" data-gset="off">星を出さない</button>' : ""}
+    </div>`;
 }
 
 async function openShop(pane, id) {
@@ -218,6 +233,7 @@ async function openShop(pane, id) {
       <label>住所<input name="address" value="${esc(s.address)}" /></label>
       <label>電話<input name="tel" value="${esc(s.tel)}" /></label>
       <label>メモ<textarea name="admin_note" rows="3">${esc(s.admin_note)}</textarea></label>
+      ${id ? googleBox(s) : ""}
       <button class="btn" type="submit">保存する</button>
       ${id ? `<a class="small" href="../#/shop/${encodeURIComponent(s.slug)}" target="_blank" style="margin-left:10px">公開ページ</a>` : ""}
     </form>
@@ -246,6 +262,15 @@ async function openShop(pane, id) {
     toast("保存しました。");
     if (!id) openShop(pane, res.data.id);
   });
+  box.querySelectorAll("[data-gset]").forEach((b) => b.addEventListener("click", async () => {
+    const v = b.dataset.gset;
+    const row = v === "same" ? { google_place_id: s.google_candidate_id, google_check: null }
+      : v === "other" ? { google_check: "別の店", google_place_id: null }
+      : { google_candidate_id: s.google_place_id, google_place_id: null, google_check: "別の店" };
+    const { error } = await sb.from("shops").update(row).eq("id", id);
+    if (error) return toast(error.message, "error");
+    toast(v === "same" ? "Google の星を出すようにしました。" : "Google の星は出さないようにしました。"); openShop(pane, id);
+  }));
   $("#invite-form", box)?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector("button"); btn.disabled = true;
