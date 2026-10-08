@@ -244,10 +244,21 @@ def question_text(day: date) -> str:
 WEEKDAYS = "月火水木金土日"
 
 
+# 祝日（代表 10/8「今週末は3連休、10/12（月）は祝日です。」）。年が変わる前に足す
+HOLIDAYS = {
+    date(2026, 10, 12), date(2026, 11, 3), date(2026, 11, 23),
+    date(2027, 1, 1), date(2027, 1, 11), date(2027, 2, 11), date(2027, 2, 23), date(2027, 3, 22),
+    date(2027, 4, 29), date(2027, 5, 3), date(2027, 5, 4), date(2027, 5, 5), date(2027, 7, 19),
+    date(2027, 8, 11), date(2027, 9, 20), date(2027, 9, 23), date(2027, 10, 11), date(2027, 11, 3), date(2027, 11, 23),
+}
+
+
 def open_on(shop: dict, day: date) -> bool:
-    """定休日の欄にその曜日がある店は、その日は出さない（10/6 GINCHIYO は火曜定休）。"""
+    """定休日の欄にその曜日がある店は、その日は出さない（10/6 GINCHIYO は火曜定休）。祝日は「祝」がある店を出さない。"""
     holiday = shop.get("holiday") or ""
-    return WEEKDAYS[day.weekday()] not in holiday
+    if WEEKDAYS[day.weekday()] in holiday:
+        return False
+    return not (day in HOLIDAYS and "祝" in holiday and "祝日は営業" not in holiday and "祝日営業" not in holiday)
 
 
 def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
