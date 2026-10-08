@@ -381,7 +381,7 @@ body[data-mode="night"] .ticket.is-pr .t-tags .kind { color: var(--pr); }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 /* ---- Google の情報（試験中。2026-10-08） ---- */
-.g-block{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0}
+.g-block{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0;padding:14px 20px 0}
 .g-block:empty{display:none}
 .g-label{font-size:.8rem;opacity:.75}
 .g-rate{font-size:1.4rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
