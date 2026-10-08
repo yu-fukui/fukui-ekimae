@@ -42,10 +42,30 @@ def search(q: str) -> dict:
     return p
 
 
+def photo(name: str) -> str:
+    """写真1枚を小さめ（幅480px）で取り、base64 で返す。Place Photos は1枚ごとに料金（月1,000枚まで無料）。"""
+    import base64
+    url = f"https://places.googleapis.com/v1/{name}/media?maxWidthPx=480&skipHttpRedirect=true&key={os.environ['GOOGLE_PLACES_API_KEY']}"
+    with urllib.request.urlopen(url, timeout=30) as res:
+        uri = json.load(res)["photoUri"]
+    with urllib.request.urlopen(uri, timeout=30) as res:
+        return base64.b64encode(res.read()).decode()
+
+
 if __name__ == "__main__":
     if not os.environ.get("GOOGLE_PLACES_API_KEY"):
         sys.exit("GOOGLE_PLACES_API_KEY がありません")
     out = {q: search(q) for q in sys.argv[1:]}
+    n = int(os.environ.get("PHOTOS", "0"))
+    if n:
+        # 写真の中身はログにだけ出す。1行が長すぎると落ちるので 2,000 字ずつに分ける
+        for q, p in out.items():
+            for k, ph in enumerate(p.get("photos", [])[:n]):
+                b = photo(ph["name"])
+                print(f"@@@PHOTO_BEGIN {p.get('id')} {k}")
+                for i in range(0, len(b), 2000):
+                    print(b[i:i + 2000])
+                print("@@@PHOTO_END")
     print("@@@SAMPLE_JSON_BEGIN")
     # 1行が長すぎるとログから落ちるので、行を分けて出す
     print(json.dumps(out, ensure_ascii=False, indent=1))
