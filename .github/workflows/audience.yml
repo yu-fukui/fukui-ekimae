@@ -25,4 +25,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # 新しいファイルも差分に出るようにしてから（このリポジトリの commit_file.sh は新しいファイルを拾わない）
+          git add -N insights/利用者層
           ./scripts/commit_file.sh insights/利用者層 "chore(insights): 利用者層を更新"
