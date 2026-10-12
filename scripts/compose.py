@@ -253,6 +253,12 @@ HOLIDAYS = {
 }
 
 
+# 昼に営業していないお店。お昼の枠に出さない
+NO_LUNCH = {
+    "se336a944",  # 寿司政（代表 10/12「寿司政は昼営業していません。」）
+}
+
+
 def open_on(shop: dict, day: date) -> bool:
     """定休日の欄にその曜日がある店は、その日は出さない（10/6 GINCHIYO は火曜定休）。祝日は「祝」がある店を出さない。"""
     holiday = shop.get("holiday") or ""
@@ -276,7 +282,8 @@ def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     drink = ("居酒屋", "焼鳥・串")
     cafe = [x for x in gourmet if x["genre"] == "カフェ・スイーツ"]
     # お昼の枠に居酒屋は出さない（夜だけの店が多い。10/5 しの﨑の件）
-    lunch = [x for x in gourmet if x["genre"] != "カフェ・スイーツ" and x["genre"] not in drink]
+    lunch = [x for x in gourmet if x["genre"] != "カフェ・スイーツ" and x["genre"] not in drink
+             and x["slug"] not in NO_LUNCH and x.get("lunch") != "なし"]
     evening = [x for x in gourmet if x["genre"] in drink]
     dinner = [x for x in gourmet if x["genre"] != "カフェ・スイーツ"]
 
