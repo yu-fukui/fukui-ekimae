@@ -1,0 +1,23 @@
+name: Threads の投稿を消す
+
+# 代表の指示で、出てしまった投稿を Threads から消すときに手で起動する（2026-10-12 寿司政：昼営業していない）。
+on:
+  workflow_dispatch:
+    inputs:
+      post_id:
+        description: "消す投稿の post_id（state/posted.json にある数字）"
+        required: true
+
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 消す
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          POST_ID: ${{ github.event.inputs.post_id }}
+        run: |
+          set -euo pipefail
+          [[ "$POST_ID" =~ ^[0-9]+$ ]] || { echo "post_id は数字だけ"; exit 1; }
+          curl -sS -X DELETE "https://graph.threads.net/v1.0/${POST_ID}?access_token=${THREADS_ACCESS_TOKEN}" | tee out.json
+          grep -q '"success":true' out.json
