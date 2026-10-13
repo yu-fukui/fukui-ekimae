@@ -333,6 +333,11 @@
     document.title = `${s.name}｜ふくいエキマエ`;
     window.scrollTo(0, 0);
     loadGoogle(s.slug);
+    // どのお店が見られたかを GA でわかるようにする（お店のページは #/shop/ なので、ページ別の数字には出ない）
+    if (window.gtag) window.gtag("event", "shop_view", {
+      shop_slug: s.slug, shop_name: s.name, shop_zone: ZONES[s.zone] || "", shop_town: s.town || "",
+      shop_genre: s.genre || "", shop_plan: s.is_paid ? "paid" : "free",
+    });
     const slides = $("#d-slides");
     if (slides) {
       slides.addEventListener("scroll", () => {
