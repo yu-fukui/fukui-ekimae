@@ -155,3 +155,15 @@ class SelectDueTest(unittest.TestCase):
     def test_without_schedule_ignores_posted_items(self):
         stranded = without_schedule(self.items, {"plain-1", "plain-2"})
         self.assertEqual(stranded, [])
+
+
+class ReplyApprovalTest(unittest.TestCase):
+    def test_reply_waits_for_approval(self):
+        from datetime import datetime, timezone
+        from threads_bot.queue import QueueItem, select_due
+        at = datetime(2026, 10, 14, tzinfo=timezone.utc)
+        waiting = QueueItem(id="r1", text="返事", scheduled_at=at, reply_to_id="1")
+        approved = QueueItem(id="r2", text="返事", scheduled_at=at, reply_to_id="2", approved_at="2026-10-13T22:00:00+09:00")
+        due = select_due([waiting, approved], set(), now=at, limit=5)
+        self.assertEqual([i.id for i in due], ["r2"])
+

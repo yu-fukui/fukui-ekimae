@@ -81,7 +81,8 @@ def 一本(post_id: str) -> bool:
         いいねが取れた |= 数 not in ("取れない", "?")
         本文 = " ".join((r.get("text") or "").split())
         隠し = "（非表示）" if r.get("hide_status") not in (None, "NOT_HUSHED", "") else ""
-        print(f"{i:>3}. [{誰}・{段}・いいね {数}{隠し}] {本文}")
+        # 返事の案に reply_to_id が要るので、返信の ID と、どれへの返信か（親の ID）も出す（運用部・福井担当 10/13）
+        print(f"{i:>3}. [{誰}・{段}・いいね {数}{隠し}] id={r['id']} 親={先 or post_id} {本文}")
     return True
 
 

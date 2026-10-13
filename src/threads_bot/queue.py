@@ -32,6 +32,8 @@ class QueueItem:
     thread: list[str] = field(default_factory=list)
     # 読者の返信への返事。返事を出す相手（読者の返信）の ID。代表 10/13「進めて」
     reply_to_id: str | None = None
+    # 代表が判断待ちの画面で「出す」を押した時刻。読者への返事は、これが無いと出さない（代表 10/13）
+    approved_at: str | None = None
     line_number: int = 0
 
     @property
@@ -104,6 +106,7 @@ def _parse_item(raw: dict, *, line_number: int, tz: ZoneInfo) -> QueueItem:
         alt_text=raw.get("alt_text"),
         thread=list(thread),
         reply_to_id=str(reply_to_id) if reply_to_id is not None else None,
+        approved_at=raw.get("approved_at") or None,
         line_number=line_number,
     )
 
@@ -146,6 +149,7 @@ def select_due(
 
     - 投稿済みの id は除外
     - scheduled_at が未来のもの、そもそも無いものは除外
+    - 読者への返事（reply_to_id あり）は、代表の「出す」（approved_at）が無ければ除外
 
     予約時刻のない項目は投稿されない。何度叩かれても予約時刻が来たものしか
     出ないので、起動の間隔を短くしても投稿が増えない。
@@ -157,6 +161,7 @@ def select_due(
             if item.id not in posted_ids
             and item.scheduled_at is not None
             and item.scheduled_at <= now
+            and (item.reply_to_id is None or item.approved_at)
         ),
         key=lambda i: (i.scheduled_at, i.line_number),
     )[: max(limit, 0)]
