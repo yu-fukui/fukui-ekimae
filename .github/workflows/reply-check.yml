@@ -1,0 +1,20 @@
+name: 返信の権限を確かめる
+
+# 代表 10/13「まず、出せるか確認を。」読むだけ。投稿はしない。手で起動したときだけ。
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 確かめる
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: python "scripts/返信の権限.py" | tee -a "$GITHUB_STEP_SUMMARY"
