@@ -275,6 +275,11 @@ HOLIDAYS = {
 }
 
 
+# 有料でも PR の枠に出さないお店（テスト運用中）
+NO_PR = {
+    "s18e7a90b",  # &Room（10/5 本番確認のあと、運営設定で有料に戻した。テスト運用中なので投稿しない。引き継ぎの記録）
+}
+
 # 昼に営業していないお店。お昼の枠に出さない
 NO_LUNCH = {
     "se336a944",  # 寿司政（代表 10/12「寿司政は昼営業していません。」）
@@ -305,7 +310,7 @@ def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     gourmet = [s for s in shops if s["category"] == "gourmet" and eligible(s) and open_on(s, day)]
     night = [s for s in shops if s["category"] == "night" and eligible(s) and open_on(s, day)]
     paid_due = sorted(
-        (s for s in shops if s.get("is_paid") and open_on(s, day) and
+        (s for s in shops if s.get("is_paid") and s["slug"] not in NO_PR and open_on(s, day) and
          (s["slug"] not in pr_last or (day - date.fromisoformat(pr_last[s["slug"]])).days >= PR_INTERVAL_DAYS)),
         key=lambda s: pr_last.get(s["slug"], ""))
     drink = ("居酒屋", "焼鳥・串")
