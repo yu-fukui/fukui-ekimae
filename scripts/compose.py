@@ -85,6 +85,13 @@ def shop_url(shop: dict) -> str:
     return f"{SITE}shop/{shop['slug']}/"
 
 
+def with_utm(text: str, slot: str, item_id: str) -> str:
+    """サイトへのリンクに、どの投稿から来たか分かる印を付ける（代表 10/13「つける」）。GA の参照元・キャンペーンで見られる。"""
+    q = f"?utm_source=threads&utm_medium=social&utm_campaign=ekimae_{slot}&utm_content={item_id}"
+    out = re.sub(rf"({re.escape(SITE)}shop/[A-Za-z0-9_-]+/)(?=\s|$)", lambda m: m.group(1) + q, text)
+    return out if len(out) <= 500 else text   # Threads の上限（500字）を超えるなら印は付けない
+
+
 def mention(shop: dict) -> str:
     """お店の Instagram へのリンク。@ のメンションではなく URL にする（代表の指示 2026-10-04）。"""
     # 複数店舗の共通アカウント（チェーン・本部）は紐付けない（代表の指示 2026-10-04）
@@ -282,6 +289,13 @@ def open_on(shop: dict, day: date) -> bool:
     return not (day in HOLIDAYS and "祝" in holiday and "祝日は営業" not in holiday and "祝日営業" not in holiday)
 
 
+def opens_by_noon(shop: dict) -> bool:
+    """サイトに出ている営業時間（hours）がいちばん早くても15時からの店は、お昼の枠に出さない。
+    代表 10/13「エキマエサイトで確認でいいです」：Google には問い合わせず、サイトのお店データで確かめる。営業時間が無い店はそのまま。"""
+    times = [int(h) for h, _ in re.findall(r"(\d{1,2})[:：](\d{2})", shop.get("hours") or "")]
+    return not times or min(times) < 15
+
+
 def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     # 試験用の複製（slug が -gtest で終わる。例：洋食堂の Google 表示テスト）は投稿に出さない。有料にしても PR に選ばない
     shops = [s for s in shops if not s["slug"].endswith("-gtest")]
@@ -298,7 +312,7 @@ def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     cafe = [x for x in gourmet if x["genre"] == "カフェ・スイーツ"]
     # お昼の枠に居酒屋は出さない（夜だけの店が多い。10/5 しの﨑の件）
     lunch = [x for x in gourmet if x["genre"] != "カフェ・スイーツ" and x["genre"] not in drink
-             and x["slug"] not in NO_LUNCH and x.get("lunch") != "なし"]
+             and x["slug"] not in NO_LUNCH and x.get("lunch") != "なし" and opens_by_noon(x)]
     evening = [x for x in gourmet if x["genre"] in drink]
     dinner = [x for x in gourmet if x["genre"] != "カフェ・スイーツ"]
 
@@ -323,7 +337,8 @@ def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     for hm, text in slots:
         at = datetime.fromisoformat(f"{day.isoformat()}T{hm}:00").replace(tzinfo=TZ)
         digest = hashlib.sha1(text.encode()).hexdigest()[:4]
-        items.append({"id": f"p-{at:%Y%m%d%H%M}-{digest}", "text": text, "scheduled_at": at.isoformat()})
+        item_id = f"p-{at:%Y%m%d%H%M}-{digest}"
+        items.append({"id": item_id, "text": with_utm(text, f"{hm.replace(':', '')}", item_id), "scheduled_at": at.isoformat()})
     return items
 
 

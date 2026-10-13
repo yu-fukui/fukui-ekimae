@@ -98,3 +98,20 @@ class ComposeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UtmAndLunchTest(unittest.TestCase):
+    def test_utm_is_added_to_shop_links(self):
+        text = f"本文\n{compose.SITE}shop/s123/"
+        out = compose.with_utm(text, "1130", "p-1")
+        self.assertIn("shop/s123/?utm_source=threads&utm_medium=social&utm_campaign=ekimae_1130&utm_content=p-1", out)
+
+    def test_utm_is_skipped_when_too_long(self):
+        text = "あ" * 470 + f"\n{compose.SITE}shop/s123/"
+        self.assertEqual(compose.with_utm(text, "1130", "p-1"), text)
+
+    def test_evening_only_shops_are_not_lunch(self):
+        self.assertFalse(compose.opens_by_noon({"hours": "18:00〜24:00"}))
+        self.assertTrue(compose.opens_by_noon({"hours": "11:30〜14:00 / 17:00〜22:00"}))
+        self.assertTrue(compose.opens_by_noon({"hours": ""}))
+
