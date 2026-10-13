@@ -335,7 +335,8 @@ def main() -> None:
     day = date.fromisoformat(a.date) if a.date else (datetime.now(TZ) + timedelta(days=1)).date()
 
     existing = [json.loads(l) for l in QUEUE.read_text(encoding="utf-8").splitlines() if l.strip()] if QUEUE.exists() else []
-    if any(str(i.get("scheduled_at", "")).startswith(day.isoformat()) for i in existing):
+    # 読者への返事（reply_to_id のある項目）は、その日の枠を埋めたことにしない
+    if any(str(i.get("scheduled_at", "")).startswith(day.isoformat()) and not i.get("reply_to_id") for i in existing):
         print(f"{day} のぶんはもうキューにあります。足しません。")
         return
     featured = load_json(FEATURED, {"seen": [], "pr_last": {}})

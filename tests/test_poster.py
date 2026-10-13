@@ -40,6 +40,11 @@ class PublishItemTest(unittest.TestCase):
         self.assertEqual(client.containers[0]["text"], "本文")
         self.assertTrue(result.permalink.endswith("p1"))
 
+    def test_reply_to_a_reader(self):
+        client = RecordingClient()
+        publish_item(client, QueueItem(id="a", text="返事", reply_to_id="123"), CONFIG)
+        self.assertEqual(client.containers[0]["reply_to_id"], "123")
+
     def test_thread_parts_reply_to_the_previous_post(self):
         client = RecordingClient()
         item = QueueItem(id="a", text="1件目", thread=["2件目", "3件目"])

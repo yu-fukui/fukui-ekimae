@@ -30,6 +30,8 @@ class QueueItem:
     alt_text: str | None = None
     # 連投（スレッド）。1 件目への返信として順に投稿される。
     thread: list[str] = field(default_factory=list)
+    # 読者の返信への返事。返事を出す相手（読者の返信）の ID。代表 10/13「進めて」
+    reply_to_id: str | None = None
     line_number: int = 0
 
     @property
@@ -78,6 +80,10 @@ def _parse_item(raw: dict, *, line_number: int, tz: ZoneInfo) -> QueueItem:
             f"{where}: reply_control は {sorted(VALID_REPLY_CONTROLS)} のいずれかです"
         )
 
+    reply_to_id = raw.get("reply_to_id")
+    if reply_to_id is not None and not str(reply_to_id).isdigit():
+        raise QueueError(f"{where}: reply_to_id は数字の ID にしてください")
+
     if raw.get("image_url") and raw.get("video_url"):
         raise QueueError(f"{where}: image_url と video_url は同時に指定できません")
 
@@ -97,6 +103,7 @@ def _parse_item(raw: dict, *, line_number: int, tz: ZoneInfo) -> QueueItem:
         reply_control=reply_control,
         alt_text=raw.get("alt_text"),
         thread=list(thread),
+        reply_to_id=str(reply_to_id) if reply_to_id is not None else None,
         line_number=line_number,
     )
 
