@@ -46,7 +46,7 @@
   `PYTHONPATH=src python3 -m threads_bot validate` を通してから main に入れる。
   ID は `p-YYYYMMDDHHMM-xxxx`。決まった3枠の合間（例：19:00）に入れてよい
 - **時刻が過ぎた予約はまとめて出てしまう**（遅れの上限がない）。止まっていた後に再開するときは、
-  過ぎた分（特に「きょうのお昼」など時間に結びつく文面）を先に外す
+  過ぎた分（特に「今夜の一軒目」など時間に結びつく文面）を先に外す
 - 投稿のリンクは `https://ekimae.fukui-fukui.com/#/shop/<slug>`（以前 `/#/shop/…` と途中から始まる不具合があり、10/4 に修正済み）
 
 ### GitHub（yu-fukui/fukui-ekimae → Settings → Secrets and variables → Actions）

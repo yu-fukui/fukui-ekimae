@@ -99,8 +99,9 @@ def where(shop: dict) -> str:
     return f"{ZONES.get(shop['zone'], '')}{town}"
 
 
-def lunch_text(shop: dict) -> str:
-    lines = [f"きょうのお昼、{where(shop)}で。", "", f"🍴 {shop['name']}", f"{shop['genre']}"]
+def lunch_text(shop: dict, lead: str = "お昼ごはんの候補") -> str:
+    # 「きょう」と書くと、その日に開いているか確かめていないお店でも今日行けるように読めるので、日付に寄らない書き出しにする
+    lines = [f"{lead}、{where(shop)}から。", "", f"🍴 {shop['name']}", f"{shop['genre']}"]
     if mention(shop):
         lines += ["", f"最新の営業日やメニューは公式 Instagram で\n{mention(shop)}"]
     lines += ["", f"お店の場所・ほかのお店は「ふくいエキマエ」で {shop_url(shop)}"]
@@ -108,15 +109,15 @@ def lunch_text(shop: dict) -> str:
 
 
 def cafe_text(shop: dict) -> str:
-    return lunch_text(shop).replace("きょうのお昼", "午後のひと休み")
+    return lunch_text(shop, "午後のひと休み")
 
 
 def evening_text(shop: dict) -> str:
-    return lunch_text(shop).replace("きょうのお昼", "夕方のひと休み・軽く一杯")
+    return lunch_text(shop, "夕方のひと休み・軽く一杯")
 
 
 def dinner_text(shop: dict) -> str:
-    return lunch_text(shop).replace("きょうのお昼", "今夜の一軒目").replace("🍴", "🍽")
+    return lunch_text(shop, "今夜の一軒目").replace("🍴", "🍽")
 
 
 def night_text(shop: dict) -> str:
