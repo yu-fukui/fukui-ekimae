@@ -3,16 +3,15 @@ name: Search Console を読む
 # 代表 10/13「Search Console は、エキマエ開発からは見られるようにしてください。」
 # 検索の表示回数・ページ別・サイトマップ・主なページの登録状況を insights/search-console/ に残す。
 # 毎週月曜 9:10 JST と、手で起動したとき。鍵は Secrets の GSC_SERVICE_ACCOUNT_JSON。
+# 代表 10/13「非公開リポジトリを作って管理して」：公開リポジトリには数字を書かない。非公開の odekake-data に引っ越すまで、自動では動かさない。
 on:
-  schedule:
-    - cron: "10 0 * * 1"
   workflow_dispatch:
 
 jobs:
   search-console:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,8 +21,4 @@ jobs:
       - name: 取る
         env:
           GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
-        run: python scripts/search_console.py | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: コミットする
-        run: |
-          git add -N insights/search-console
-          ./scripts/commit_file.sh insights/search-console "chore(insights): Search Console を更新"
+        run: python scripts/search_console.py > /dev/null  # 公開リポジトリのログにも数字を出さない
