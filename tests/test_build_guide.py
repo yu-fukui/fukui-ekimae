@@ -21,7 +21,7 @@ class RenderTest(unittest.TestCase):
         self.assertIn("&lt;Bar&gt;", html)
         self.assertNotIn("駅前のバー", html)
         self.assertLess(html.index("スナック・ラウンジ（1軒）"), html.index("バー（1軒）"))
-        self.assertIn('href="../#/shop/a"', html)
+        self.assertIn('href="/shop/a/"', html)
         self.assertIn("https://www.instagram.com/bar_a/", html)
 
 

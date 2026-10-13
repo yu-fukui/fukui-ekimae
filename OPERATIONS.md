@@ -47,7 +47,8 @@
   ID は `p-YYYYMMDDHHMM-xxxx`。決まった3枠の合間（例：19:00）に入れてよい
 - **時刻が過ぎた予約はまとめて出てしまう**（遅れの上限がない）。止まっていた後に再開するときは、
   過ぎた分（特に「今夜の一軒目」など時間に結びつく文面）を先に外す
-- 投稿のリンクは `https://ekimae.fukui-fukui.com/#/shop/<slug>`（以前 `/#/shop/…` と途中から始まる不具合があり、10/4 に修正済み）
+- 投稿のリンクは `https://ekimae.fukui-fukui.com/shop/<slug>/`（10/13 から。お店ごとの本物のページ。前の形 `/#/shop/<slug>` のリンクも、開くと新しい形に移る）
+- お店のページ（docs/shop/）とサイトマップは、毎日 `scripts/build_shop_pages.py` が公開ビューから作り直す（非表示のお店のページは消える）
 
 ### GitHub（yu-fukui/fukui-ekimae → Settings → Secrets and variables → Actions）
 

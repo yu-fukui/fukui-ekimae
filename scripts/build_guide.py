@@ -55,7 +55,7 @@ def render(shops: list[dict]) -> str:
         for s in its:
             ig = s.get("instagram")
             ig_html = f' <small><a href="https://www.instagram.com/{h(ig)}/" rel="noopener" target="_blank">Instagram</a></small>' if ig else ""
-            out.append(f'<li><a href="../#/shop/{h(s["slug"])}">{h(s["name"])}</a>{ig_html}</li>')
+            out.append(f'<li><a href="/shop/{h(s["slug"])}/">{h(s["name"])}</a>{ig_html}</li>')
         out.append("</ul>")
     out.append(MARK[1])
     return "".join(out)

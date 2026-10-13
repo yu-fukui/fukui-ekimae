@@ -10,7 +10,7 @@
     "焼鳥・串": "yakitori", "居酒屋": "izakaya", "イタリアン・フレンチ": "italian", "中華": "chuka", "アジア・各国料理": "asia",
     "カフェ・スイーツ": "cafe", "洋食": "yoshoku", "バー": "bar", "スナック・ラウンジ": "snack", "その他": "other",
   };
-  const gicon = (g) => `<img class="gi" src="./img/genre/${GENRE_IMG[g] || "other"}.webp" alt="" width="48" height="48" loading="lazy" decoding="async" />`;
+  const gicon = (g) => `<img class="gi" src="/img/genre/${GENRE_IMG[g] || "other"}.webp" alt="" width="48" height="48" loading="lazy" decoding="async" />`;
   const ZONES = { ekimae: "駅前", katamachi: "片町" };
   const SHORT = { "寿司・海鮮": "寿司", "そば・うどん": "そば", "焼肉・肉料理": "焼肉", "焼鳥・串": "焼鳥", "イタリアン・フレンチ": "洋風",
     "アジア・各国料理": "各国", "カフェ・スイーツ": "カフェ", "スナック・ラウンジ": "スナック" };
@@ -63,6 +63,12 @@
   }
   // tel: リンク用に、数字と + だけにする
   const telHref = (t) => String(t).replace(/[^0-9+]/g, "");
+  // お店のページは本物のページ（/shop/<slug>/）。代表 10/13「進めて」（検索に出すため）
+  const shopPath = (slug) => `/shop/${encodeURIComponent(slug)}/`;
+  const shopSlug = () => { const m = location.pathname.match(/^\/shop\/([^/]+)\/?$/); return m ? decodeURIComponent(m[1]) : null; };
+  let pushed = false;   // このページの中で移動したか（「一覧にもどる」で history.back() してよいか）
+  const go = (path) => { history.pushState(null, "", path); pushed = true; route(); };
+  const goList = () => (shopSlug() ? go("/") : renderList());
   function igUrl(h) { return `https://www.instagram.com/${encodeURIComponent(h)}/`; }
 
   // ---- Google の口コミの星。代表の指示 2026-10-08「Googleの口コミの星だけでいいかな」「全体に反映して」。place_id が登録されたお店だけ出る ----
@@ -102,7 +108,7 @@
         if (page.length < size) return rows;
       }
     }
-    const res = await fetch("./data/shops.json");
+    const res = await fetch("/data/shops.json");
     if (!res.ok) throw new Error(`エラー ${res.status}`);
     return res.json();
   }
@@ -178,7 +184,7 @@
     const pic = s.photos && s.photos[0];
     const top = s.is_paid && pic, thumb = !s.is_paid && pic;
     return `<li class="ticket${s.is_paid ? " is-pr" : ""}">
-      <a class="t-link" href="#/shop/${encodeURIComponent(s.slug)}">
+      <a class="t-link" href="${shopPath(s.slug)}">
         ${top ? `<div class="t-photo" style="background-image:url('${esc(photoUrl(top))}')" role="img" aria-label="${esc(top.caption || s.name)}"></div>` : ""}
         <div class="t-main${thumb ? " has-thumb" : ""}">
           ${stamp(s)}
@@ -199,10 +205,10 @@
   // 昼と夜で、ロゴとファビコンを切り替える（夜は片町のイラスト）
   function setIcons(night) {
     const sfx = night ? "-night" : "";
-    $("#logo-img").src = `./logo${sfx}-96.png`;
-    $("#fav32").href = `./favicon${sfx}-32.png`;
-    $("#fav64").href = `./favicon${sfx}-64.png`;
-    $("#touch-icon").href = `./apple-touch-icon${sfx}.png`;
+    $("#logo-img").src = `/logo${sfx}-96.png`;
+    $("#fav32").href = `/favicon${sfx}-32.png`;
+    $("#fav64").href = `/favicon${sfx}-64.png`;
+    $("#touch-icon").href = `/apple-touch-icon${sfx}.png`;
   }
 
   function renderList() {
@@ -333,7 +339,7 @@
     document.title = `${s.name}｜ふくいエキマエ`;
     window.scrollTo(0, 0);
     loadGoogle(s.slug);
-    // どのお店が見られたかを GA でわかるようにする（お店のページは #/shop/ なので、ページ別の数字には出ない）
+    // どのお店が見られたかを GA でわかるようにする（ページの中の移動ではページ別の数字が増えないので、イベントで送る）
     if (window.gtag) window.gtag("event", "shop_view", {
       shop_slug: s.slug, shop_name: s.name, shop_zone: ZONES[s.zone] || "", shop_town: s.town || "",
       shop_genre: s.genre || "", shop_plan: s.is_paid ? "paid" : "free",
@@ -349,8 +355,11 @@
   }
 
   function route() {
-    const m = location.hash.match(/^#\/shop\/(.+)$/);
-    if (m) return renderDetail(decodeURIComponent(m[1]));
+    // 前の形（#/shop/<slug>）のリンクは、新しい形に置きかえる（Threads などに出ている古いリンクを生かす）
+    const old = location.hash.match(/^#\/shop\/(.+)$/);
+    if (old) history.replaceState(null, "", shopPath(decodeURIComponent(old[1])));
+    const slug = shopSlug();
+    if (slug) return renderDetail(slug);
     $("#detail").hidden = true;
     $("#app").hidden = false;
     document.title = "福井駅前・片町のランチ・居酒屋とバー・スナック｜ふくいエキマエ";
@@ -363,10 +372,10 @@
     if (!t) return;
     if (t.dataset.mode) {
       state.mode = t.dataset.mode; state.genre = ""; state.mood = ""; state.shown = PAGE; remember();
-      if (location.hash.startsWith("#/shop/")) location.hash = "#/"; else renderList();
+      goList();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    else if (t.dataset.act === "search") { if (location.hash.startsWith("#/shop/")) location.hash = "#/"; setTimeout(() => $("#q-m").focus(), 50); }
+    else if (t.dataset.act === "search") { goList(); setTimeout(() => $("#q-m").focus(), 50); }
     else if (t.dataset.mood) {
       const m = MOODS[state.mode].find((x) => x.id === t.dataset.mood);
       const prev = currentMood();
@@ -381,17 +390,17 @@
     else if ("reset" in t.dataset) {
       state.q = ""; state.genre = ""; state.zone = ""; state.mood = ""; state.shown = PAGE; remember();
       for (const id of ["#q", "#q-m"]) $(id).value = "";
-      if (location.hash.startsWith("#/shop/")) location.hash = "#/"; else renderList();
+      goList();
     }
     else if (t.id === "more") { state.shown += PAGE; renderList(); }
     else if (t.dataset.slide) { const sl = $("#d-slides"); sl.scrollTo({ left: sl.clientWidth * Number(t.dataset.slide), behavior: "smooth" }); }
-    else if ("back" in t.dataset) { history.length > 1 ? history.back() : (location.hash = "#/"); }
+    else if ("back" in t.dataset) { pushed ? history.back() : go("/"); }
   });
   for (const id of ["#q", "#q-m"]) {
     $(id).addEventListener("input", (e) => {
       state.q = e.target.value; state.shown = PAGE;
       for (const other of ["#q", "#q-m"]) if (other !== id) $(other).value = state.q;
-      if (location.hash.startsWith("#/shop/")) location.hash = "#/"; else renderList();
+      goList();
     });
   }
   // 「掲載について問い合わせる」（#inquiry）から来たときは、問い合わせフォームを開いてそこへ移る
@@ -400,6 +409,15 @@
     setTimeout(() => d.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
   window.addEventListener("hashchange", () => (location.hash === "#inquiry" ? openInquiry() : route()));
+  window.addEventListener("popstate", () => route());
+  // お店へのリンクは、ページを読み直さずにこの中で開く（新しいタブで開くときなどはそのまま）
+  document.addEventListener("click", (e) => {
+    const a = e.target instanceof Element && e.target.closest('a[href^="/shop/"], a[href="/"]');
+    if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target) return;
+    if (!state.shops.length) return;
+    e.preventDefault();
+    go(a.getAttribute("href"));
+  });
   // 同じ #inquiry をもう一度押したときも、フォームへ移る
   document.addEventListener("click", (e) => {
     const a = e.target instanceof Element && e.target.closest('a[href="#inquiry"]');
@@ -466,11 +484,11 @@
 
   // ?demo=1 のときだけ、有料掲載の見本（架空の店）を混ぜて表示する。本番の一覧には出さない。
   const demo = new URLSearchParams(location.search).has("demo");
-  const loadDemo = () => (demo ? fetch("./demo/shops.json?v=2").then((r) => r.json()) : Promise.resolve([]));
+  const loadDemo = () => (demo ? fetch("/demo/shops.json?v=2").then((r) => r.json()) : Promise.resolve([]));
   if (demo) {
     const bar = document.createElement("div");
     bar.className = "demo-bar";
-    bar.innerHTML = '<b>見本</b>を表示中（架空のお店）・<a href="./demo/credits.html">写真クレジット</a>';
+    bar.innerHTML = '<b>見本</b>を表示中（架空のお店）・<a href="/demo/credits.html">写真クレジット</a>';
     document.body.prepend(bar);
   }
 

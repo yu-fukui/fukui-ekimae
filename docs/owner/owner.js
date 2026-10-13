@@ -71,7 +71,7 @@ async function render(shop) {
         <div><small>ご契約</small><b>${contracted ? esc(PLANS[shop.plan]) : "無料プラン"}</b>
           ${contracted ? "" : shop.is_hidden ? '<p class="muted small" style="margin:8px 0 0">サイトに掲載していないため、お申し込みはできません。運営にご連絡ください。</p>' : `${campaignNote(sub)}<button class="btn" data-plan="monthly" type="button" style="margin-top:8px;padding:8px 16px;font-size:.85rem">有料プランに申し込む</button>`}</div>
         <div><small>${canceling ? "有料プランの終了日" : sub?.status === "trialing" ? "無料期間の終わり（翌日からお支払い）" : "次回の更新日"}</small><b>${contracted && (canceling ? sub.cancel_at : nextDate) ? fmtDate(canceling ? sub.cancel_at : nextDate) : "—"}</b></div>
-        <a class="see" href="../${location.search.includes("demo") ? "?demo=1" : ""}#/shop/${encodeURIComponent(shop.slug)}" target="_blank" rel="noopener">公開ページを見る →</a>
+        <a class="see" href="${location.search.includes("demo") ? `../?demo=1#/shop/${encodeURIComponent(shop.slug)}` : `/shop/${encodeURIComponent(shop.slug)}/`}" target="_blank" rel="noopener">公開ページを見る →</a>
       </div>
       ${canceling ? `<p class="notice" style="margin-top:10px;padding:10px 14px;border-radius:12px;background:#fdecea;color:#8a1c12"><b>解約の手続きが済んでいます。</b>${fmtDate(sub.cancel_at)}で有料プランが終わり、無料掲載に戻ります。それまでは今までどおりご利用いただけます。<br><span class="small">取り消すときは「お支払い方法の変更・解約」から「サブスクを続ける」を押してください。</span></p>` : ""}
       ${contracted ? (sub ? '<p style="margin-top:10px"><button class="btn-ghost" id="portal" type="button">お支払い方法の変更・解約</button></p>' : '<p class="muted small" style="margin-top:10px">運営が設定した有料プランです。変更は運営にご連絡ください。</p>') : ""}

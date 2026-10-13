@@ -92,7 +92,7 @@ async function showInquiries(pane) {
     const email = (r.contact.match(/[^\s／]+@[^\s／]+/) || [""])[0];   // 連絡先は「メール ／ 電話 ○○」の形
     const shop = r.shops
       ? `<p class="small">対象のお店：<strong>${esc(r.shops.name)}</strong>（${esc(r.shops.town || "")}）${r.shops.tel ? ` ／ 店の電話：<a href="tel:${esc(r.shops.tel)}">${esc(r.shops.tel)}</a>` : " ／ 店の電話：未登録"}
-          <a class="small" href="../#/shop/${encodeURIComponent(r.shops.slug)}" target="_blank">公開ページ</a>
+          <a class="small" href="/shop/${encodeURIComponent(r.shops.slug)}/" target="_blank">公開ページ</a>
           <button class="icon-btn" data-unpick>別の店にする</button></p>
          <div class="row" style="align-items:flex-end">
            <label style="flex:1;min-width:220px">招待するメールアドレス<input type="email" data-invite-email value="${esc(email)}" /></label>
@@ -235,7 +235,7 @@ async function openShop(pane, id) {
       <label>メモ<textarea name="admin_note" rows="3">${esc(s.admin_note)}</textarea></label>
       ${id ? googleBox(s) : ""}
       <button class="btn" type="submit">保存する</button>
-      ${id ? `<a class="small" href="../#/shop/${encodeURIComponent(s.slug)}" target="_blank" style="margin-left:10px">公開ページ</a>` : ""}
+      ${id ? `<a class="small" href="/shop/${encodeURIComponent(s.slug)}/" target="_blank" style="margin-left:10px">公開ページ</a>` : ""}
     </form>
     ${id ? `<h3>オーナー（ログインできる人）</h3>
       <ul class="list">${members.map((m) => `<li class="spread"><span>${esc(m.email)} <span class="small muted">${fmtDate(m.invited_at)} 招待</span></span>

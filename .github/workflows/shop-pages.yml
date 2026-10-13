@@ -1,0 +1,42 @@
+name: お店のページを作る
+
+# 代表 10/13「進めて」：お店ごとの本物のページ（docs/shop/<slug>/）とサイトマップを、公開ビューから毎日作り直す。
+# 非表示にしたお店のページは消える。トップ（docs/index.html）の見た目が変わったときも作り直す。
+on:
+  schedule:
+    - cron: "20 19 * * *"   # 毎日 4:20 JST
+  push:
+    branches: [main]
+    paths:
+      - docs/index.html
+      - scripts/build_shop_pages.py
+  workflow_dispatch:
+
+concurrency:
+  group: shop-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 作る
+        run: python scripts/build_shop_pages.py | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: コミットする
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs/shop docs/sitemap.xml
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git commit -q -m "chore: お店のページを更新"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push; then exit 0; fi
+            sleep $((attempt * 5))
+          done
+          exit 1

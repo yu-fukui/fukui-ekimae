@@ -82,7 +82,7 @@ def load_json(path: Path, default):
 
 
 def shop_url(shop: dict) -> str:
-    return f"{SITE}#/shop/{shop['slug']}"
+    return f"{SITE}shop/{shop['slug']}/"
 
 
 def mention(shop: dict) -> str:
