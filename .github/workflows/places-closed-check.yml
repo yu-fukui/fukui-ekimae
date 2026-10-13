@@ -1,7 +1,10 @@
 name: Google でお店の閉業を確かめる
 
-# 運営だけが見る調べもの。手で起動するだけ。結果は成果物（7日で消える）とログに置き、リポジトリには残さない。
+# 運営だけが見る調べもの。月1回（代表 10/13）と手で起動したとき。結果は非公開の odekake-data に置き、公開リポジトリには残さない。
 on:
+  # 代表 10/13「未登録店・閉店チェックは月1回」。結果は非公開の odekake-data の ekimae/insights/google/<年-月>/ に置く
+  schedule:
+    - cron: "0 1 1 * *"   # 毎月1日 10:00 JST
   workflow_dispatch:
     inputs:
       max_calls:
@@ -20,12 +23,20 @@ jobs:
       - name: 確かめる
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
-          MAX_CALLS: ${{ github.event.inputs.max_calls }}
+          MAX_CALLS: ${{ github.event.inputs.max_calls || '1200' }}
         run: |
           set -o pipefail
-          python scripts/places_closed_check.py > /dev/null  # Google の店名・住所を公開のログ・要約に出さない（結果は成果物だけ）
-      - uses: actions/upload-artifact@v4
-        with:
-          name: closed_check
-          path: out/closed_check.csv
-          retention-days: 7
+          python scripts/places_closed_check.py > /dev/null  # Google の店名・住所を公開のログ・要約に出さない（結果は非公開の置き場だけ）
+      - name: 非公開の置き場に置く
+        env:
+          DATA_REPO_TOKEN: ${{ secrets.DATA_REPO_TOKEN }}
+          DATA_DIR: ekimae
+        run: |
+          m="$(TZ=Asia/Tokyo date +%Y-%m)"
+          mkdir -p "insights/google/$m"
+          cp "out/closed_check.csv" "insights/google/$m/closed_check.csv"
+          set +e
+          ./scripts/非公開.sh push insights/google "chore(google): 閉業チェック $m"
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then echo "::error::非公開の置き場に置けませんでした（$rc）"; exit 1; fi

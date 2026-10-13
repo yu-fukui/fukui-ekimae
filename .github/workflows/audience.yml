@@ -11,20 +11,29 @@ jobs:
   audience:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: 非公開の置き場から写す
+        env:
+          DATA_REPO_TOKEN: ${{ secrets.DATA_REPO_TOKEN }}
+          DATA_DIR: ekimae
+        run: ./scripts/非公開.sh pull
       - name: 取る
         env:
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
         run: python "scripts/利用者層.py" > /dev/null  # 公開リポジトリのログ・要約に数字を出さない（代表 10/13）
-      - name: コミットする
+      - name: 非公開の置き場に置く
+        env:
+          DATA_REPO_TOKEN: ${{ secrets.DATA_REPO_TOKEN }}
+          DATA_DIR: ekimae
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # 新しいファイルも差分に出るようにしてから（このリポジトリの commit_file.sh は新しいファイルを拾わない）
-          git add -N insights/利用者層
-          ./scripts/commit_file.sh insights/利用者層 "chore(insights): 利用者層を更新"
+          set +e
+          ./scripts/非公開.sh push "insights/利用者層" "chore(insights): 利用者層を更新"
+          rc=$?
+          set -e
+          # 鍵が無い（2）ときも、公開リポジトリには置かない
+          if [ "$rc" -ne 0 ]; then echo "::error::非公開の置き場に置けませんでした（$rc）"; exit 1; fi

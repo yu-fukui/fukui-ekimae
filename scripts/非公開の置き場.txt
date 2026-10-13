@@ -1,0 +1,8 @@
+# 公開リポジトリに置かず、非公開の fukui-fukui/odekake-data の ekimae/ に置くもの（2026-10-13 代表「非公開リポジトリを作って管理して」「完成まで進めて」）。
+# scripts/非公開.sh は fukui-fukui/threads のものをそのまま写した。1行に1つ。フォルダは中身ごと。
+insights/投稿の数字.jsonl
+insights/利用者層
+# 月1回の閉業チェック・未掲載店のチェックの結果（Google の店名・住所を含む。運営の確認用）
+insights/google
+# 投稿を消したときの記録（id・日時・理由だけ）
+削除の記録.jsonl

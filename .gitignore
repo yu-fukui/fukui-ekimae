@@ -2,3 +2,8 @@ private/
 __pycache__/
 .env
 node_modules/
+# 非公開の置き場（fukui-fukui/odekake-data の ekimae/）に置くもの。公開リポジトリには入れない（代表 10/13）
+insights/投稿の数字.jsonl
+insights/利用者層/
+insights/google/
+削除の記録.jsonl
