@@ -27,6 +27,13 @@ Deno.serve(async (req) => {
   const id = q.ok ? (await q.json())[0]?.google_place_id : null;
   if (!id) return json({ error: "このお店は対象外です" }, 404);
 
+  // Google に問い合わせた回数を数える（代表 10/13「1週間の数字を報告して」）。数えられなくても星は出す
+  await fetch(`${base}/rest/v1/rpc/count_places_call`, {
+    method: "POST",
+    headers: { apikey: sr, Authorization: `Bearer ${sr}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_source: "google-place" }),
+  }).catch(() => {});
+
   const r = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(id)}`, {
     headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": "rating,userRatingCount" },
   });
