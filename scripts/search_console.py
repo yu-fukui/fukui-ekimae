@@ -62,14 +62,16 @@ def main() -> None:
     today = datetime.date.today()
     end = today - datetime.timedelta(days=3)  # 数字が出そろうまで2〜3日かかる
     start = end - datetime.timedelta(days=27)
-    rng = {"startDate": start.isoformat(), "endDate": end.isoformat()}
+    # ドメインプロパティ（fukui-fukui.com）には、おでかけなど別のサイトも入っているので、エキマエのページだけに絞る
+    rng = {"startDate": start.isoformat(), "endDate": end.isoformat(),
+           "dimensionFilterGroups": [{"filters": [{"dimension": "page", "operator": "contains", "expression": SITE_HOST}]}]}
 
     total = query(s, prop, rng)
     pages = query(s, prop, {**rng, "dimensions": ["page"], "rowLimit": 50})
     queries = query(s, prop, {**rng, "dimensions": ["query"], "rowLimit": 30})
 
     r = s.get(f"{API}/webmasters/v3/sites/{urllib.parse.quote(prop, safe='')}/sitemaps")
-    sitemaps = r.json().get("sitemap", []) if r.ok else []
+    sitemaps = [m for m in (r.json().get("sitemap", []) if r.ok else []) if SITE_HOST in m.get("path", "")]
 
     inspections = []
     for u in CHECK_URLS:
@@ -80,6 +82,7 @@ def main() -> None:
     t = total[0] if total else {"clicks": 0, "impressions": 0, "ctr": 0, "position": 0}
     L = [f"# Search Console {today}", "",
          f"- プロパティ：{prop}",
+         "- 対象：ekimae.fukui-fukui.com のページだけ",
          f"- 期間：{start} 〜 {end}（28日）",
          f"- 表示回数 {t['impressions']:.0f} ／ クリック {t['clicks']:.0f} ／ 平均掲載順位 {t['position']:.1f}",
          f"- 検索に出たページの数：{len(pages)}（上位50まで）", "",
