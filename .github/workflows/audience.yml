@@ -20,7 +20,7 @@ jobs:
       - name: 取る
         env:
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-        run: python "scripts/利用者層.py" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python "scripts/利用者層.py" > /dev/null  # 公開リポジトリのログ・要約に数字を出さない（代表 10/13）
       - name: コミットする
         run: |
           git config user.name "github-actions[bot]"

@@ -23,7 +23,7 @@ jobs:
           MAX_CALLS: ${{ github.event.inputs.max_calls }}
         run: |
           set -o pipefail
-          python scripts/places_closed_check.py | tee -a "$GITHUB_STEP_SUMMARY"
+          python scripts/places_closed_check.py > /dev/null  # Google の店名・住所を公開のログ・要約に出さない（結果は成果物だけ）
       - uses: actions/upload-artifact@v4
         with:
           name: closed_check
