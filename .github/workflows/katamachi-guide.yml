@@ -20,5 +20,14 @@ jobs:
         run: python scripts/build_guide.py
       - name: コミットする
         run: |
-          ./scripts/commit_file.sh docs/katamachi/index.html "chore(guide): 片町ガイドのお店一覧を更新"
-          ./scripts/commit_file.sh docs/sitemap.xml "chore(guide): サイトマップの更新日を直す"
+          # ガイドとサイトマップを1回でコミットする（別々にすると、もう片方の変更が残って pull --rebase が断られる。10/18 の失敗）
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/katamachi/index.html docs/sitemap.xml
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git commit -q -m "chore(guide): 片町ガイドのお店一覧を更新"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin "${GITHUB_REF_NAME}" && git push; then exit 0; fi
+            sleep $((attempt * 5))
+          done
+          exit 1
