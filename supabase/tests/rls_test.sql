@@ -25,7 +25,11 @@ create function pg_temp.check(ok boolean, label text) returns void language plpg
 -- 1. 未ログイン：公開ビューは読める。shops 本体は読めない。非表示の店は出ない。無料の店の紹介文は空。
 set role anon; select set_config('request.jwt.claims','',false);
 select pg_temp.check((select count(*) from public_shops) = 3, '未ログインは公開ビューで3店（非表示を除く）');
-select pg_temp.check((select count(*) from shops) = 0, '未ログインは shops 本体を読めない');
+do $$ begin
+  -- 権限が無ければ permission denied、権限があっても RLS で0行。どちらでも「読めない」
+  if (select count(*) from shops) > 0 then raise exception 'NG: 未ログインが shops 本体を読めた'; end if;
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, '未ログインは shops 本体を読めない');
 select pg_temp.check((select is_paid from public_shops where slug='paid-shop'), '有料の店は is_paid');
 select pg_temp.check(not (select is_paid from public_shops where slug='expired'), '期限切れは無料扱い');
 insert into inquiries (shop_name, contact, message) values ('テスト店','test@example.com','掲載したい');

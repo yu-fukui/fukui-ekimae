@@ -132,6 +132,16 @@ Meta for Developers でアプリを作り、Threads API の `threads_basic` と 
 @fukui_ekimae の長期アクセストークン（60日）を発行する。ユーザーID とトークンを上の Secrets に入れる。
 トークンは `threads-refresh-token.yml` が毎週更新する。
 
+### 表を作るとき（マイグレーションの決まり）
+
+Supabase は 2026-10-30 から、`public` に新しく作る表に Data API（supabase-js・PostgREST）の権限を自動では付けない。
+作り直し（新しいプロジェクト・preview branch・`db reset`）も同じ。なので、表やビューを作るマイグレーションには、
+**同じファイルの中に GRANT を書く**。
+
+- 権限は RLS と合わせて必要な分だけ。`anon` には、公開してよいもの（公開ビューを読む・問い合わせを送る）以外は付けない
+- `service_role`（Edge Functions・Actions）が使う表は `grant all ... to service_role` を書く
+- 今ある表の権限は `0017_explicit_grants.sql` にまとめてある。テスト（`supabase/tests/stub_supabase.sql`）は自動の権限なしで流すので、GRANT を書き忘れると落ちる
+
 ## 店のデータを作り直す
 
 調査で作った店のリスト（CSV）から、初期データを作り直せる。
