@@ -37,14 +37,14 @@ const fmt = (d: Date) => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate
 const jst = (sec: number) => new Date(sec * 1000 + 9 * 3600_000);   // 日本時間の日付にする
 const yen = (n: number) => `${n.toLocaleString("ja-JP")}円`;
 
-// Resend でメールを送る（差出人は返信を受けない no-reply）
-async function sendMail(to: string[], subject: string, text: string, from: string) {
+// Resend でメールを送る（差出人は返信を受けない no-reply。返信先 replyTo を付けたときは、返信はそちらに届く）
+async function sendMail(to: string[], subject: string, text: string, from: string, replyTo?: string) {
   const key = Deno.env.get("RESEND_API_KEY");
   if (!key || !to.length) return;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to, subject, text }),
+    body: JSON.stringify({ from, to, subject, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status} ${await res.text()}`);
 }
@@ -83,7 +83,7 @@ export function welcomeText(shopName: string, sub: Stripe.Subscription, site: st
     "■ お問い合わせ",
     `${site}#inquiry`,
     "",
-    "※このメールは送信専用のアドレスから送っています。ご返信いただいてもお答えできません。",
+    "※このメールにご返信いただくと、運営（contact@fukui-fukui.com）に届きます。",
     "",
     "ふくいエキマエ（ふくふくプロジェクト）",
     site,
@@ -99,7 +99,9 @@ async function sendWelcome(cs: Stripe.Checkout.Session, sub: Stripe.Subscription
   const site = (Deno.env.get("SITE_URL") || "https://ekimae.fukui-fukui.com/").replace(/\/?$/, "/");
   const to = cs.customer_details?.email || cs.customer_email || "";
   const noreply = Deno.env.get("WELCOME_FROM") ?? "ふくいエキマエ <no-reply@fukui-fukui.com>";
-  if (to) await sendMail([to], `【ふくいエキマエ】有料掲載プランのお申し込みありがとうございます（${name}）`, welcomeText(name, sub, site), noreply);
+  // お店の人が返信したら運営の窓口に届くように（代表 10/20「返信先を contact@fukui-fukui.com に」）
+  const replyTo = Deno.env.get("WELCOME_REPLY_TO") ?? "contact@fukui-fukui.com";
+  if (to) await sendMail([to], `【ふくいエキマエ】有料掲載プランのお申し込みありがとうございます（${name}）`, welcomeText(name, sub, site), noreply, replyTo);
   // 運営へのお知らせ
   const admins = (Deno.env.get("NOTIFY_TO") ?? "yasu29fr@gmail.com").split(",").map((x) => x.trim()).filter(Boolean);
   const item = sub.items.data[0];

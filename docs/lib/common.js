@@ -1,5 +1,5 @@
 // オーナー画面・運営画面で共通の部品（Supabase への接続、画像の縮小など）
-import { createDemoClient, demoUrls } from "./demo-sb.js?v=4";
+import { createDemoClient, demoUrls } from "./demo-sb.js?v=5";
 
 export const cfg = window.FUKUFUKU_CONFIG || {};
 // ?demo=login / free / owner / admin のときは、見本のデータで画面だけ動かす（保存はされない）

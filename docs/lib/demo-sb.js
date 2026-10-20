@@ -51,7 +51,7 @@ export const demoUrls = new Map();
 
 export function createDemoClient(role) {
   const db = seed(role);
-  const session = role === "login" ? null : { user: { id: USER, email: role === "admin" ? "yasu29fr@gmail.com" : "owner@example.com" } };
+  const session = role === "login" ? null : { user: { id: USER, email: role === "admin" ? "admin@example.com" : "owner@example.com" } };
   const embed = (table, row, sel) => {
     const out = { ...row };
     if (/shops\(/.test(sel)) out.shops = db.shops.find((s) => s.id === row.shop_id) || null;
