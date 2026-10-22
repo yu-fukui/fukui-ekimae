@@ -343,29 +343,48 @@ def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
     return items
 
 
+SLOT_TIMES = ("11:30", "14:30", "16:30", "18:30", "20:30")
+
+
+def filled(day: date, existing: list[dict]) -> bool:
+    """その日の自動の枠がもうキューにあるか。手で足した投稿（21:00 の紹介など）や読者への返事は数えない（10/23 くじらの件）。"""
+    return any(str(i.get("scheduled_at", ""))[:16] in {f"{day.isoformat()}T{t}" for t in SLOT_TIMES}
+               and not i.get("reply_to_id") for i in existing)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--date", help="この日のぶんを作る（既定は翌日）")
+    ap.add_argument("--date", help="この日のぶんを作る（既定は翌日。日付をまたいで遅れて動いたときは今日のぶんも）")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
-    day = date.fromisoformat(a.date) if a.date else (datetime.now(TZ) + timedelta(days=1)).date()
+    now = datetime.now(TZ)
+    if a.date:
+        days = [date.fromisoformat(a.date)]
+    else:
+        # GitHub の schedule は遅れることがあり、日付をまたぐと「翌日」がずれて1日飛ぶ（10/23 の件）。
+        # 朝 11 時より前に動いたときは、今日のぶん（まだ全部これからの枠）も作る
+        days = ([now.date()] if now.hour < 11 else []) + [(now + timedelta(days=1)).date()]
 
     existing = [json.loads(l) for l in QUEUE.read_text(encoding="utf-8").splitlines() if l.strip()] if QUEUE.exists() else []
-    # 読者への返事（reply_to_id のある項目）は、その日の枠を埋めたことにしない
-    if any(str(i.get("scheduled_at", "")).startswith(day.isoformat()) and not i.get("reply_to_id") for i in existing):
-        print(f"{day} のぶんはもうキューにあります。足しません。")
-        return
     featured = load_json(FEATURED, {"seen": [], "pr_last": {}})
-    items = compose(day, load_shops(), featured)
-    for it in items:
-        print(f"── {it['scheduled_at']}\n{it['text']}\n")
-    if a.dry_run:
+    shops = None
+    added = []
+    for day in days:
+        if filled(day, existing):
+            print(f"{day} のぶんはもうキューにあります。足しません。")
+            continue
+        shops = shops if shops is not None else load_shops()
+        items = compose(day, shops, featured)
+        for it in items:
+            print(f"── {it['scheduled_at']}\n{it['text']}\n")
+        added += items
+    if a.dry_run or not added:
         return
     with QUEUE.open("a", encoding="utf-8") as f:
-        for it in items:
+        for it in added:
             f.write(json.dumps(it, ensure_ascii=False) + "\n")
     FEATURED.write_text(json.dumps(featured, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    print(f"{len(items)} 本を予約しました。")
+    print(f"{len(added)} 本を予約しました。")
 
 
 if __name__ == "__main__":
