@@ -160,7 +160,7 @@ def ld_json(s: dict, base: str) -> str:
 
 def page(tpl: str, s: dict, shops: list, base: str) -> str:
     url = f"{SITE}/shop/{s['slug']}/"
-    title = f"{s['name']}（{s.get('genre') or 'お店'}・{area(s)}）｜ふくいエキマエ"
+    title = f"{s['name']}（{s.get('genre') or 'お店'}・{area(s)}）｜ふくいエキマエ（福井駅前）"
     desc = (f"{s['name']}は、{ZONE_LONG.get(s.get('zone'), '')}エリア" + (f"（福井市{s['town']}）" if s.get("town") else "")
             + f"の{s.get('genre') or 'お店'}のお店です。" + (s["catch"] if s.get("is_paid") and s.get("catch") else "")
             + "店舗情報と、近くのお店をまとめています。")
@@ -170,7 +170,7 @@ def page(tpl: str, s: dict, shops: list, base: str) -> str:
     h = sub(r'<meta name="description" content="[^"]*" />', f'<meta name="description" content="{e(desc)}" />')
     h = sub(r'<link rel="canonical" href="[^"]*" />', f'<link rel="canonical" href="{url}" />')
     h = sub(r'<meta property="og:url" content="[^"]*" />', f'<meta property="og:url" content="{url}" />')
-    h = sub(r'<meta property="og:title" content="[^"]*" />', f'<meta property="og:title" content="{e(s["name"])}｜ふくいエキマエ" />')
+    h = sub(r'<meta property="og:title" content="[^"]*" />', f'<meta property="og:title" content="{e(s["name"])}｜ふくいエキマエ（福井駅前）" />')
     h = sub(r'<meta property="og:description" content="[^"]*" />', f'<meta property="og:description" content="{e(desc)}" />')
     h = sub(r'<meta property="og:type" content="website" />', '<meta property="og:type" content="article" />')
     h = sub(r'<script type="application/ld\+json">.*?</script>', ld_json(s, base))

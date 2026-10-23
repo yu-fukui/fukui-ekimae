@@ -336,7 +336,7 @@
       </section>` : ""}`;
     $("#app").hidden = true;
     el.hidden = false;
-    document.title = `${s.name}｜ふくいエキマエ`;
+    document.title = `${s.name}｜ふくいエキマエ（福井駅前）`;
     window.scrollTo(0, 0);
     loadGoogle(s.slug);
     // どのお店が見られたかを GA でわかるようにする（ページの中の移動ではページ別の数字が増えないので、イベントで送る）
@@ -362,7 +362,7 @@
     if (slug) return renderDetail(slug);
     $("#detail").hidden = true;
     $("#app").hidden = false;
-    document.title = "福井駅前・片町のランチ・居酒屋とバー・スナック｜ふくいエキマエ";
+    document.title = "ふくいエキマエ（福井駅前）｜福井駅前・片町のランチ・グルメ・居酒屋とバー・スナック";
     renderList();
   }
 
