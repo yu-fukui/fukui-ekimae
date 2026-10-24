@@ -271,6 +271,16 @@ HOLIDAYS = {
 }
 
 
+# 期間中は自動の枠に出さないお店（手で入れた紹介と重ねないため）。slug → この日まで
+HOLD_UNTIL = {
+    # 片町昼バル（11/1）の参加5店。運用部・福井が紹介を手で入れている（代表 10/24「各店の単体の紹介投稿も織り交ぜること」）
+    "s32a38885": date(2026, 11, 1), "se36ce584": date(2026, 11, 1), "s7407b590": date(2026, 11, 1),
+    "sceb510ce": date(2026, 11, 1), "sbe378692": date(2026, 11, 1),
+}
+
+# 手で入れた投稿がある日は、その本数だけ自動の枠を減らす（1日の本数を増やさない。代表 10/24）。この順に外す
+DROP_ORDER = ("16:30", "14:30")
+
 # 有料でも PR の枠に出さないお店（テスト運用中）
 NO_PR = {
     "s18e7a90b",  # &Room（10/5 本番確認のあと、運営設定で有料に戻した。テスト運用中なので投稿しない。引き継ぎの記録）
@@ -297,9 +307,9 @@ def opens_by_noon(shop: dict) -> bool:
     return not times or min(times) < 15
 
 
-def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
+def compose(day: date, shops: list[dict], featured: dict, manual: int = 0) -> list[dict]:
     # 試験用の複製（slug が -gtest で終わる。例：洋食堂の Google 表示テスト）は投稿に出さない。有料にしても PR に選ばない
-    shops = [s for s in shops if not s["slug"].endswith("-gtest")]
+    shops = [s for s in shops if not s["slug"].endswith("-gtest") and not (s["slug"] in HOLD_UNTIL and day <= HOLD_UNTIL[s["slug"]])]
     rng = random.Random(day.isoformat())
     seen = set(featured.get("seen", []))
     pr_last = featured.get("pr_last", {})
@@ -319,13 +329,20 @@ def compose(day: date, shops: list[dict], featured: dict) -> list[dict]:
 
     slots: list[tuple[str, str]] = []
 
+    dropped = set(DROP_ORDER[:manual])
+
     def add(hm: str, pool: list[dict], make) -> None:
+        if hm in dropped:
+            return
         if (s := pick(pool, seen, rng)):
             seen.add(s["slug"]); slots.append((hm, make(s)))
 
     add("11:30", lunch or gourmet, lunch_text)
-    slots.append(("14:30", question_text(day)))
-    if paid_due:
+    if "14:30" not in dropped:
+        slots.append(("14:30", question_text(day)))
+    if "16:30" in dropped:
+        pass
+    elif paid_due:
         s = paid_due[0]; pr_last[s["slug"]] = day.isoformat(); slots.append(("16:30", pr_text(s)))
     else:
         add("16:30", evening + cafe, evening_text)
@@ -374,7 +391,8 @@ def main() -> None:
             print(f"{day} のぶんはもうキューにあります。足しません。")
             continue
         shops = shops if shops is not None else load_shops()
-        items = compose(day, shops, featured)
+        manual = sum(1 for i in existing if str(i.get("scheduled_at", "")).startswith(day.isoformat()) and not i.get("reply_to_id"))
+        items = compose(day, shops, featured, manual)
         for it in items:
             print(f"── {it['scheduled_at']}\n{it['text']}\n")
         added += items
