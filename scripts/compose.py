@@ -252,11 +252,150 @@ QUESTIONS = [
 
 駅の近くで、濡れずに入れるお店があると助かる…。
 地元の人の「雨の日はここ」を教えてください。お店の名前だけでもOKです！""",
+    """福井駅に着いて、帰りの電車まで1時間。1軒だけ寄るなら、どこにしますか？
+
+・さっと食べられる定食・そば
+・駅前で一杯
+・お土産も買えるお店
+
+旅の人に教えたい地元の1軒を聞かせてください。
+選択肢にない答えも大歓迎です。""",
+    """親が福井に遊びに来た夜。福井駅前で晩ごはんを1軒だけ選ぶなら、どこにしますか？
+
+・地魚と地酒のお店
+・落ち着いた和食
+・みんなで分けられる居酒屋
+
+家族を連れていくならここ、という1軒を教えてください。
+お店の名前だけでもOKです！""",
+    """給料日の金曜日。片町で1軒だけ、ちょっと贅沢するなら？
+
+・カウンターのお鮨
+・焼肉
+・ワインのおいしいお店
+・いいバー
+
+地元の人の「ごほうびの日はここ」を教えてください。
+選択肢にない答えも大歓迎です。""",
+    """冷えこんだ夜。福井駅前で温まりに1軒だけ入るなら、どこにしますか？
+
+・おでん
+・鍋
+・ラーメン
+・熱燗のおいしい居酒屋
+
+寒い日に思い出す1軒を教えてください。
+お店の名前だけでもOKです！""",
+    """友だち4人で女子会。福井駅前・片町のお店を1軒だけ選ぶなら？
+
+・個室のある居酒屋
+・イタリアン・バル
+・甘いものもあるカフェ
+
+地元の人の「ここなら盛り上がる」1軒を聞かせてください。
+選択肢にない答えも大歓迎です。""",
+    """送別会の二次会。片町で1軒だけ選ぶなら、どこにしますか？
+
+・カラオケのあるスナック
+・ゆっくり話せるバー
+・もう一軒、居酒屋
+
+幹事をしたことがある人の「ここなら間違いない」1軒を教えてください。
+選択肢にない答えも大歓迎です。""",
+    """日曜のお昼。家族で福井駅前のお店に入るなら、1軒だけどこにしますか？
+
+・子どもも食べやすい洋食
+・そば・うどん
+・ソースカツ丼
+
+家族で行きやすい1軒を教えてください。
+お店の名前だけでもOKです！""",
+    """恐竜博物館の帰り、福井駅前で晩ごはん。1軒だけ行くなら、どこにしますか？
+
+・福井らしい地魚
+・ボリュームのある定食
+・駅から近い居酒屋
+
+観光の人に教えたい地元の1軒を聞かせてください。
+選択肢にない答えも大歓迎です。""",
+    """福井駅前・片町で、初めてのデート。お店を1軒だけ選ぶなら？
+
+・雰囲気のいいイタリアン
+・カウンターの和食
+・静かなバー
+
+地元の人の「ここなら安心」の1軒を教えてください。
+お店の名前だけでもOKです！""",
+    """雪の日でも、つい行きたくなる福井駅前のお店。1軒だけ挙げるなら、どこですか？
+
+駅から近くて、寒い日に恋しくなるお店。地元の人の答えを聞かせてください。
+お店の名前だけでもOKです！""",
+    """仕事帰り、一人でさっと一杯。福井駅前で1軒だけ寄るなら、どこにしますか？
+
+・立ち飲み
+・カウンターの居酒屋
+・焼き鳥
+・バー
+
+地元の人のいつもの1軒を教えてください。
+選択肢にない答えも大歓迎です。""",
+    """福井駅前で朝ごはん・モーニング。1軒だけ挙げるなら、どこですか？
+
+・喫茶店のモーニング
+・パン屋さん
+・朝からやっている定食
+
+朝が早い日に寄る1軒を教えてください。
+お店の名前だけでもOKです！""",
+    """県外の人に、ソースカツ丼を1軒だけすすめるなら、福井駅前のどこにしますか？
+
+「ここで食べてほしい」という1軒を、地元の人に聞きたいです。
+お店の名前だけでもOKです！""",
+    """おろしそばを1杯だけ食べるなら。福井駅前・片町のどこに行きますか？
+
+地元の人がいつも行く1軒を教えてください。
+お店の名前だけでもOKです！""",
+    """誕生日のお祝い。福井駅前・片町のお店を1軒だけ選ぶなら？
+
+・コースのあるお店
+・ケーキも頼めるお店
+・個室のある和食
+
+お祝いならここ、という1軒を聞かせてください。
+選択肢にない答えも大歓迎です。""",
+    """新幹線で来た友だちと、福井駅から歩いて行ける1軒。選ぶなら、どこにしますか？
+
+・地魚と地酒
+・ソースカツ丼
+・駅前のバル
+
+駅に着いてすぐ案内したい1軒を教えてください。
+選択肢にない答えも大歓迎です。""",
 ]
 
 
-def question_text(day: date) -> str:
-    return QUESTIONS[(day - date(2026, 10, 8)).days % len(QUESTIONS)]
+def first_line(text: str) -> str:
+    return text.split("\n", 1)[0].strip()
+
+
+def question_text(day: date, used: dict[str, str] | None = None) -> str:
+    """出したことのない問いを先に。全部出したら、いちばん前に出したものから（10/25：同じ文の出し直しは閲覧が 2,391→79 に落ちた）。
+    used は「1行目 → 最後に出した日」。1行目が同じなら同じ問いとみなす。"""
+    used = used or {}
+    start = (day - date(2026, 10, 8)).days % len(QUESTIONS)
+    order = QUESTIONS[start:] + QUESTIONS[:start]
+    return min(order, key=lambda q: used.get(first_line(q), ""))
+
+
+def used_questions(items: list[dict]) -> dict[str, str]:
+    """キューにある（出た・出る予定の）14:30 の問いの、1行目と日付"""
+    heads = {first_line(q) for q in QUESTIONS}
+    out: dict[str, str] = {}
+    for i in items:
+        h = first_line(i.get("text", ""))
+        if h in heads:
+            out[h] = max(out.get(h, ""), str(i.get("scheduled_at", ""))[:10])
+    return out
 
 
 WEEKDAYS = "月火水木金土日"
@@ -307,7 +446,7 @@ def opens_by_noon(shop: dict) -> bool:
     return not times or min(times) < 15
 
 
-def compose(day: date, shops: list[dict], featured: dict, manual: int = 0) -> list[dict]:
+def compose(day: date, shops: list[dict], featured: dict, manual: int = 0, used_q: dict[str, str] | None = None) -> list[dict]:
     # 試験用の複製（slug が -gtest で終わる。例：洋食堂の Google 表示テスト）は投稿に出さない。有料にしても PR に選ばない
     shops = [s for s in shops if not s["slug"].endswith("-gtest") and not (s["slug"] in HOLD_UNTIL and day <= HOLD_UNTIL[s["slug"]])]
     rng = random.Random(day.isoformat())
@@ -339,7 +478,10 @@ def compose(day: date, shops: list[dict], featured: dict, manual: int = 0) -> li
 
     add("11:30", lunch or gourmet, lunch_text)
     if "14:30" not in dropped:
-        slots.append(("14:30", question_text(day)))
+        q = question_text(day, used_q)
+        slots.append(("14:30", q))
+        if used_q is not None:
+            used_q[first_line(q)] = day.isoformat()
     if "16:30" in dropped:
         pass
     elif paid_due:
@@ -386,13 +528,14 @@ def main() -> None:
     featured = load_json(FEATURED, {"seen": [], "pr_last": {}})
     shops = None
     added = []
+    used_q = used_questions(existing)
     for day in days:
         if filled(day, existing):
             print(f"{day} のぶんはもうキューにあります。足しません。")
             continue
         shops = shops if shops is not None else load_shops()
         manual = sum(1 for i in existing if str(i.get("scheduled_at", "")).startswith(day.isoformat()) and not i.get("reply_to_id"))
-        items = compose(day, shops, featured, manual)
+        items = compose(day, shops, featured, manual, used_q)
         for it in items:
             print(f"── {it['scheduled_at']}\n{it['text']}\n")
         added += items
