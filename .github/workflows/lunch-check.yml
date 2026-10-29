@@ -1,0 +1,25 @@
+name: ランチの印を取り直す
+
+# 代表 10/28「ランチのボタンとGoogleの営業時間を元にして」。Edge Function lunch-check を呼ぶだけ。
+# 関数の側で「1軒あたり25日に1回」しか Google に問い合わせないので、毎日呼んでも月の回数は飲食店の軒数（約480回）まで。
+# 公開の anon キー（docs/config.js と同じ）で呼ぶ。ログには件数だけが出る（Google の中身は出さない）。
+on:
+  schedule:
+    - cron: "40 18 * * *"   # 毎日 3:40 JST（お店のページを作り直す 4:20 の前）
+  workflow_dispatch:
+
+jobs:
+  call:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 呼ぶ（調べるお店がなくなるまで、最大6回）
+        run: |
+          url=$(grep -o 'https://[a-z0-9]*\.supabase\.co' docs/config.js)
+          key=$(grep -o 'supabaseAnonKey: "[^"]*"' docs/config.js | cut -d'"' -f2)
+          for i in 1 2 3 4 5 6; do
+            res=$(curl -sS -X POST "$url/functions/v1/lunch-check" -H "Authorization: Bearer $key" -H "apikey: $key" -H "Content-Type: application/json" -d '{}')
+            echo "$res"
+            n=$(echo "$res" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("checked", 0))')
+            [ "$n" -gt 0 ] || break
+          done

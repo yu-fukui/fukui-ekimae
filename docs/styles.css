@@ -161,6 +161,7 @@ body[data-mode="day"] .stamp .gi { transform: rotate(4deg); }
 .pr-tag { background: var(--pr-soft); color: var(--pr); border: 1px solid currentColor; border-radius: 5px; padding: 0 6px; font-size: .66rem; font-weight: 800; letter-spacing: .08em; }
 .t-title { margin: 0; font-size: 1.04rem; font-weight: 800; line-height: 1.45; overflow-wrap: anywhere; }
 .t-note { margin: 0; font-size: .84rem; color: var(--muted); }
+.sec-note { margin: -6px 0 12px; }
 .t-area { align-self: flex-start; display: inline-flex; align-items: center; gap: 3px; background: var(--main-soft); color: var(--main); border-radius: 999px; padding: 1px 10px 1px 6px; font-size: .74rem; font-weight: 700; margin-top: 2px; }
 .t-area svg { width: 14px; height: 14px; }
 .perf { position: relative; height: 0; border-top: 2px dashed var(--line); margin: 0 16px; }

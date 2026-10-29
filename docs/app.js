@@ -17,7 +17,8 @@
   // 「きょうの気分」：選ぶとジャンル（とエリア）で絞り込む
   const MOODS = {
     day: [
-      { id: "lunch", icon: "🍱", label: "お昼ごはん", sub: "定食・そば・麺", genres: ["和食", "そば・うどん", "ラーメン", "洋食", "中華", "寿司・海鮮"] },
+      // ランチは Google の営業時間で昼に開いているお店（代表 10/28）。印がまだ1軒も無いときだけ、前のジャンルでの絞り込みにもどる
+      { id: "lunch", icon: "🍱", label: "ランチ", sub: "昼に開いているお店", old: ["お昼ごはん", "定食・そば・麺"], lunch: true, genres: ["和食", "そば・うどん", "ラーメン", "洋食", "中華", "寿司・海鮮"] },
       { id: "cafe", icon: "☕", label: "ひと休み", sub: "カフェ・スイーツ", genres: ["カフェ・スイーツ"] },
       { id: "party", icon: "🍻", label: "みんなで飲み会", sub: "居酒屋・焼鳥", genres: ["居酒屋", "焼鳥・串", "焼肉・肉料理"] },
       { id: "special", icon: "✨", label: "ちょっといい店", sub: "洋風・寿司・和食", genres: ["イタリアン・フレンチ", "寿司・海鮮", "アジア・各国料理"] },
@@ -39,6 +40,9 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const state = { mode: "day", zone: "", genre: "", mood: "", q: "", shown: PAGE, shops: [] };
   const currentMood = () => (MOODS[state.mode] || []).find((m) => m.id === state.mood);
+  const lunchReady = () => state.shops.some((s) => s.lunch_google != null);
+  const byLunch = (m) => Boolean(m?.lunch && lunchReady());
+  const moodMatch = (s, m = currentMood()) => !m || (byLunch(m) ? s.lunch_google === true : !m.genres || m.genres.includes(s.genre));
 
   try {
     const saved = JSON.parse(localStorage.getItem("fukufuku") || "{}");
@@ -149,13 +153,12 @@
       (state.mode === "night" ? s.category === "night" : s.category === "gourmet") &&
       (!state.zone || s.zone === state.zone) &&
       (!state.genre || s.genre === state.genre) &&
-      (!currentMood()?.genres || currentMood().genres.includes(s.genre)) &&
+      moodMatch(s) &&
       matchQ(s));
   }
 
   function renderChips() {
-    const mg = currentMood()?.genres;
-    const pool = state.shops.filter((s) => (state.mode === "night" ? s.category === "night" : s.category === "gourmet") && (!mg || mg.includes(s.genre)));
+    const pool = state.shops.filter((s) => (state.mode === "night" ? s.category === "night" : s.category === "gourmet") && moodMatch(s));
     const counts = {};
     pool.forEach((s) => { counts[s.genre] = (counts[s.genre] || 0) + 1; });
     const genres = Object.keys(counts).sort((a, b) => (a === "その他") - (b === "その他") || counts[b] - counts[a]);
@@ -227,10 +230,12 @@
     const zoneName = state.zone ? ZONES[state.zone] : "駅前・片町";
     $("#sec-title").textContent = `${zoneName}の${state.genre || (night ? "夜のお店" : "お店")}`;
     renderChips();
-    $("#moods").innerHTML = MOODS[state.mode].map((m) => `<button class="mood" data-mood="${m.id}" aria-pressed="${state.mood === m.id}">
+    $("#moods").innerHTML = MOODS[state.mode].map((m) => (m.old && !byLunch(m) ? { ...m, label: m.old[0], sub: m.old[1] } : m)).map((m) => `<button class="mood" data-mood="${m.id}" aria-pressed="${state.mood === m.id}">
       <span class="mood-ic" aria-hidden="true">${m.icon}</span><span class="mood-t"><b>${esc(m.label)}</b><small>${esc(m.sub)}</small></span></button>`).join("");
-    const mood = currentMood();
+    const cm = currentMood();
+    const mood = cm?.old && !byLunch(cm) ? { ...cm, label: cm.old[0] } : cm;
     if (mood) $("#sec-title").textContent = mood.zone ? `「${mood.label}」のお店` : `${state.zone ? ZONES[state.zone] : "駅前・片町"}で「${mood.label}」`;
+    $("#sec-note").hidden = !byLunch(mood);
     const all = filtered();
     // 有料のお店は「PICK UP」（見出しに PR 表記）に写真つきで出し、下の一覧には無料のお店を並べる
     const picks = all.filter((s) => s.is_paid), list = all.filter((s) => !s.is_paid);
