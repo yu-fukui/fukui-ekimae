@@ -58,4 +58,5 @@ jobs:
           python -m threads_bot $args
 
       - name: 投稿済み記録をコミットする
+        if: always()
         run: ./scripts/commit_file.sh
