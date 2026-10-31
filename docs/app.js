@@ -40,7 +40,8 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const state = { mode: "day", zone: "", genre: "", mood: "", q: "", shown: PAGE, shops: [] };
   const currentMood = () => (MOODS[state.mode] || []).find((m) => m.id === state.mood);
-  const lunchReady = () => state.shops.some((s) => s.lunch_google != null);
+  const LUNCH_BUTTON = false;
+  const lunchReady = () => LUNCH_BUTTON && state.shops.some((s) => s.lunch_google != null);
   const byLunch = (m) => Boolean(m?.lunch && lunchReady());
   const moodMatch = (s, m = currentMood()) => !m || (byLunch(m) ? s.lunch_google === true : !m.genres || m.genres.includes(s.genre));
 
@@ -165,7 +166,8 @@
     if (state.genre && !counts[state.genre]) state.genre = "";
     // 「きょうの気分」の欄は代表の判断で隠している（10/2）。ランチだけはジャンルの並びの先頭に出す（代表 10/31「ランチボタンない」）
     const lunch = MOODS.day.find((m) => m.lunch);
-    const nLunch = state.mode === "day" && byLunch(lunch) ? state.shops.filter((s) => s.category === "gourmet" && s.lunch_google === true).length : 0;
+    // 代表 10/31「営業時間だけで判断はできない」：ランチメニューの有無で決めるまで隠す（LUNCH_BUTTON を true にすれば戻る）
+    const nLunch = LUNCH_BUTTON && state.mode === "day" && byLunch(lunch) ? state.shops.filter((s) => s.category === "gourmet" && s.lunch_google === true).length : 0;
     $("#genre-chips").innerHTML = [`<button class="chip" data-genre="" aria-pressed="${!state.genre && !state.mood}">すべて</button>`]
       .concat(nLunch ? [`<button class="chip chip-lunch" data-mood="lunch" aria-pressed="${state.mood === "lunch"}"><span aria-hidden="true">🍱</span> ランチ<small>${nLunch}</small></button>`] : [])
       .concat(genres.map((g) => `<button class="chip" data-genre="${esc(g)}" aria-pressed="${state.genre === g}">${gicon(g)}${esc(g)}<small>${counts[g]}</small></button>`))
