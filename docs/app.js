@@ -163,7 +163,11 @@
     pool.forEach((s) => { counts[s.genre] = (counts[s.genre] || 0) + 1; });
     const genres = Object.keys(counts).sort((a, b) => (a === "その他") - (b === "その他") || counts[b] - counts[a]);
     if (state.genre && !counts[state.genre]) state.genre = "";
-    $("#genre-chips").innerHTML = [`<button class="chip" data-genre="" aria-pressed="${!state.genre}">すべて</button>`]
+    // 「きょうの気分」の欄は代表の判断で隠している（10/2）。ランチだけはジャンルの並びの先頭に出す（代表 10/31「ランチボタンない」）
+    const lunch = MOODS.day.find((m) => m.lunch);
+    const nLunch = state.mode === "day" && byLunch(lunch) ? state.shops.filter((s) => s.category === "gourmet" && s.lunch_google === true).length : 0;
+    $("#genre-chips").innerHTML = [`<button class="chip" data-genre="" aria-pressed="${!state.genre && !state.mood}">すべて</button>`]
+      .concat(nLunch ? [`<button class="chip chip-lunch" data-mood="lunch" aria-pressed="${state.mood === "lunch"}"><span aria-hidden="true">🍱</span> ランチ<small>${nLunch}</small></button>`] : [])
       .concat(genres.map((g) => `<button class="chip" data-genre="${esc(g)}" aria-pressed="${state.genre === g}">${gicon(g)}${esc(g)}<small>${counts[g]}</small></button>`))
       .join("");
   }
@@ -391,7 +395,11 @@
       document.querySelector(".sec").scrollIntoView({ behavior: "smooth", block: "start" });
     }
     else if ("zone" in t.dataset && t.closest("#zone-seg")) { state.zone = t.dataset.zone; state.shown = PAGE; remember(); renderList(); }
-    else if ("genre" in t.dataset) { state.genre = t.dataset.genre; state.shown = PAGE; renderList(); }
+    else if ("genre" in t.dataset) {
+      state.genre = t.dataset.genre;
+      if (!state.genre && !currentMood()?.zone) state.mood = "";   // 「すべて」はランチの絞り込みも外す
+      state.shown = PAGE; renderList();
+    }
     else if ("reset" in t.dataset) {
       state.q = ""; state.genre = ""; state.zone = ""; state.mood = ""; state.shown = PAGE; remember();
       for (const id of ["#q", "#q-m"]) $(id).value = "";
