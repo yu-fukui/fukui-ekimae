@@ -1,5 +1,8 @@
 // ランチの印を付ける（代表 10/28「ランチのボタンとGoogleの営業時間を元にして」、統括 10/29 費用0円の見込みで了承）
-// Google の営業時間を見て「昼（12:00〜13:00）ずっと開いている曜日がある」お店に shops.lunch_google = true を付ける。
+// 代表 10/31「ランチメニュー有無の設定が必要」「Googleで出してOK。不明なものは、私が確認します」
+// Google の「昼食を提供（servesLunch）」が true で、かつ昼（12:00〜13:00）ずっと開いている曜日があるお店に shops.lunch_google = true を付ける。
+// servesLunch が false か、昼に開いていなければ false。servesLunch が空なら null（不明。代表が確かめて shops.lunch_manual に入れる）。
+// servesLunch を取ると料金は「Place Details Enterprise + Atmosphere」（月1,000回まで無料。星の区分とは別）。
 // Google の決まりで営業時間そのものは保存しない。保存するのは印と調べた日（lunch_checked）だけ。
 // 1回の呼び出しで、調べてから25日以上たったお店（または未調査のお店）を最大 BATCH 軒だけ調べる。
 // 誰が何回呼んでも、1軒あたり25日に1回しか Google に問い合わせないので、月の回数は飲食店の軒数（約480回）をこえない。
@@ -36,6 +39,13 @@ export function hasLunch(periods: Period[] | undefined): boolean | null {
   return false;
 }
 
+// 昼食を出す × 昼に開いている
+export function decide(serves: boolean | undefined, open: boolean | null): boolean | null {
+  if (serves === false || open === false) return false;
+  if (serves === true) return open === null ? null : true;
+  return null;
+}
+
 const today = () => new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);   // 日本時間の日付
 
 if (import.meta.main) Deno.serve(async (req) => {
@@ -61,10 +71,11 @@ if (import.meta.main) Deno.serve(async (req) => {
     if (!claim.ok || !(await claim.json()).length) continue;
     await fetch(`${base}/rest/v1/rpc/count_places_call`, { method: "POST", headers: h, body: JSON.stringify({ p_source: "lunch-check" }) }).catch(() => {});
     const r = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(s.google_place_id)}`, {
-      headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": "regularOpeningHours.periods" },
+      headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": "regularOpeningHours.periods,servesLunch" },
     });
     if (!r.ok) { failed++; continue; }   // 印は前のまま。25日後にまた調べる
-    const lunch = hasLunch((await r.json()).regularOpeningHours?.periods);
+    const p = await r.json();
+    const lunch = decide(p.servesLunch, hasLunch(p.regularOpeningHours?.periods));
     if (lunch === true) yes++; else if (lunch === false) no++; else unknown++;
     await fetch(`${base}/rest/v1/shops?id=eq.${s.id}`, { method: "PATCH", headers: h, body: JSON.stringify({ lunch_google: lunch }) });
   }

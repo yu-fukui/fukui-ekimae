@@ -40,7 +40,7 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const state = { mode: "day", zone: "", genre: "", mood: "", q: "", shown: PAGE, shops: [] };
   const currentMood = () => (MOODS[state.mode] || []).find((m) => m.id === state.mood);
-  const LUNCH_BUTTON = false;
+  const LUNCH_BUTTON = true;   // 代表 10/31「Googleで出してOK」：Google の「昼食を提供」×昼に開いている（＋代表の確認）で出す
   const lunchReady = () => LUNCH_BUTTON && state.shops.some((s) => s.lunch_google != null);
   const byLunch = (m) => Boolean(m?.lunch && lunchReady());
   const moodMatch = (s, m = currentMood()) => !m || (byLunch(m) ? s.lunch_google === true : !m.genres || m.genres.includes(s.genre));
