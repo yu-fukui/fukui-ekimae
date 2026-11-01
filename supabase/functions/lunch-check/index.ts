@@ -4,8 +4,9 @@
 // servesLunch が false か、昼に開いていなければ false。servesLunch が空なら null（不明。代表が確かめて shops.lunch_manual に入れる）。
 // servesLunch を取ると料金は「Place Details Enterprise + Atmosphere」（月1,000回まで無料。星の区分とは別）。
 // Google の決まりで営業時間そのものは保存しない。保存するのは印と調べた日（lunch_checked）だけ。
-// 1回の呼び出しで、調べてから25日以上たったお店（または未調査のお店）を最大 BATCH 軒だけ調べる。
-// 誰が何回呼んでも、1軒あたり25日に1回しか Google に問い合わせないので、月の回数は飲食店の軒数（約480回）をこえない。
+// 1回の呼び出しで、今月（日本時間）まだ調べていないお店を最大 BATCH 軒だけ調べる。
+// 誰が何回呼んでも、1軒あたり月1回しか Google に問い合わせないので、月の回数は飲食店の軒数（約480回）をこえない。
+// （前は「25日ごと」だったが、それだと31日の月に2回まわることがあるので月1回にした。運用部・福井 11/1）
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -15,7 +16,6 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 const BATCH = 100;
-const REFRESH_DAYS = 25;
 const NOON = 12 * 60, ONE = 13 * 60;   // この1時間ずっと開いていれば「ランチあり」
 const WEEK = 7 * 24 * 60;
 
@@ -56,7 +56,7 @@ if (import.meta.main) Deno.serve(async (req) => {
   const base = Deno.env.get("SUPABASE_URL")!, sr = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const h = { apikey: sr, Authorization: `Bearer ${sr}`, "Content-Type": "application/json" };
 
-  const since = new Date(Date.now() + 9 * 3600_000 - REFRESH_DAYS * 86400_000).toISOString().slice(0, 10);
+  const since = today().slice(0, 8) + "01";   // 今月の1日。これより前に調べたお店だけ調べ直す
   const q = await fetch(`${base}/rest/v1/shops?select=id,google_place_id&is_hidden=eq.false&category=eq.gourmet`
     + `&google_place_id=not.is.null&or=(lunch_checked.is.null,lunch_checked.lt.${since})&order=lunch_checked.nullsfirst,slug&limit=${BATCH}`, { headers: h });
   if (!q.ok) return json({ error: `お店を読めませんでした（${q.status}）` }, 500);
@@ -73,7 +73,7 @@ if (import.meta.main) Deno.serve(async (req) => {
     const r = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(s.google_place_id)}`, {
       headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": "regularOpeningHours.periods,servesLunch" },
     });
-    if (!r.ok) { failed++; continue; }   // 印は前のまま。25日後にまた調べる
+    if (!r.ok) { failed++; continue; }   // 印は前のまま。来月また調べる
     const p = await r.json();
     const lunch = decide(p.servesLunch, hasLunch(p.regularOpeningHours?.periods));
     if (lunch === true) yes++; else if (lunch === false) no++; else unknown++;
