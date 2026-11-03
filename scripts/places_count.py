@@ -15,6 +15,7 @@ import json
 import math
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from collections import Counter
@@ -29,6 +30,8 @@ TOWNS = ("中央", "大手", "順化")
 SOUTH, NORTH, WEST, EAST = 36.0555, 36.0705, 136.2090, 136.2340
 START_RADIUS = 160.0  # m
 MAX_CALLS = int(os.environ.get("MAX_CALLS", "800"))
+# Google の「1分あたりの回数」の上限に当たらないよう、1回ごとに少し待つ（11/2 に 429 で止まった）
+PAUSE = float(os.environ.get("PAUSE", "1.2"))  # 秒。1分に約50回
 
 calls = 0
 
@@ -41,11 +44,15 @@ def nearby(lat: float, lng: float, radius: float, types: list[str]) -> list[dict
     req = urllib.request.Request(URL, data=json.dumps(body).encode(), method="POST", headers={
         "Content-Type": "application/json", "X-Goog-Api-Key": os.environ["GOOGLE_PLACES_API_KEY"],
         "X-Goog-FieldMask": FIELDS})
-    try:
-        with urllib.request.urlopen(req, timeout=30) as res:
-            return json.load(res).get("places", [])
-    except urllib.error.HTTPError as e:
-        sys.exit(f"Google がエラーを返しました（{e.code}）: {e.read().decode()[:500]}")
+    for wait in (0, 30, 60, 120):  # 429（1分あたりの上限）のときは待って問い直す。問い直しは料金に入らない
+        time.sleep(wait or PAUSE)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as res:
+                return json.load(res).get("places", [])
+        except urllib.error.HTTPError as e:
+            if e.code != 429:
+                sys.exit(f"Google がエラーを返しました（{e.code}）: {e.read().decode()[:500]}")
+    sys.exit("Google の1分あたりの上限が続いたので止めました（429）")
 
 
 def search(lat: float, lng: float, radius: float, found: dict) -> None:
