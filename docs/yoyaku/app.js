@@ -16,7 +16,7 @@
   const DRAFT_KEY = "threads-bot.draft";
   const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
   const ANTHROPIC_VERSION = "2023-06-01";
-  const PROOFREAD_MODEL = "claude-opus-5";
+  const PROOFREAD_MODEL = "claude-sonnet-5-5";   // 代表 11/3「Sonnet はエキマエとぎふあいちのみ変更して」
   const JST = "Asia/Tokyo";
 
   function el(id) {
