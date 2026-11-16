@@ -77,17 +77,28 @@
   function igUrl(h) { return `https://www.instagram.com/${encodeURIComponent(h)}/`; }
 
   // ---- Google の口コミの星。代表の指示 2026-10-08「Googleの口コミの星だけでいいかな」「全体に反映して」。place_id が登録されたお店だけ出る ----
-  async function loadGoogle(slug) {
+  // Google への問い合わせを減らす（11/15：1週間で516回に増えた）。検索ロボットや自動のブラウザでは取らない、
+  // 星の欄が画面に入ったときだけ取る、同じページの中で同じ店をもう一度開いたときは前の答えを使う（保存はしない）
+  const BOT = /bot|crawl|spider|slurp|preview|lighthouse|headless|facebookexternalhit|embedly|quora|pinterest|bingpreview/i;
+  const gSeen = new Map();
+  function loadGoogle(slug) {
     const box = $("#g-block");
     if (!box || !hasDb) return;
+    if (navigator.webdriver || BOT.test(navigator.userAgent)) { box.removeAttribute("aria-busy"); return; }
+    if (!("IntersectionObserver" in window)) return fetchGoogle(slug, box);
+    const io = new IntersectionObserver((es) => {
+      if (es.some((e) => e.isIntersecting)) { io.disconnect(); fetchGoogle(slug, box); }
+    });
+    io.observe(box);
+  }
+  async function fetchGoogle(slug, box) {
     try {
-      const res = await fetch(`${cfg.supabaseUrl}/functions/v1/google-place`, {
+      if (!gSeen.has(slug)) gSeen.set(slug, fetch(`${cfg.supabaseUrl}/functions/v1/google-place`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: cfg.supabaseAnonKey, Authorization: `Bearer ${cfg.supabaseAnonKey}` },
         body: JSON.stringify({ slug }),
-      });
-      if (!res.ok) throw new Error(String(res.status));
-      const g = await res.json();
+      }).then((res) => { if (!res.ok) throw new Error(String(res.status)); return res.json(); }));
+      const g = await gSeen.get(slug);
       if (!document.body.contains(box)) return;
       const n = Math.round(g.rating || 0);
       box.removeAttribute("aria-busy");
@@ -95,6 +106,7 @@
         <span class="g-rate">${g.rating}</span><span class="g-stars" aria-label="星 ${g.rating}">${"★".repeat(n)}${"☆".repeat(5 - n)}</span>
         <span class="g-count">${g.count || 0} 件</span>`;
     } catch (e) {
+      gSeen.delete(slug);   // 失敗はやり直さない（次に開いたときにだけもう一度）
       box.removeAttribute("aria-busy");
       box.innerHTML = "";
     }
