@@ -616,7 +616,10 @@ def main() -> None:
     featured = load_json(FEATURED, {"seen": [], "pr_last": {}})
     shops = None
     added = []
-    used_q = used_questions(existing)
+    # 出した問いの記録。キューは投稿済みの分が消えるので、紹介済みの記録（featured.json）にも残す（11/16：古い問いが「まだ出していない」に見えていた）
+    used_q = dict(featured.get("questions", {}))
+    for h, d in used_questions(existing).items():
+        used_q[h] = max(used_q.get(h, ""), d)
     for day in days:
         if filled(day, existing):
             print(f"{day} のぶんはもうキューにあります。足しません。")
@@ -632,6 +635,7 @@ def main() -> None:
     with QUEUE.open("a", encoding="utf-8") as f:
         for it in added:
             f.write(json.dumps(it, ensure_ascii=False) + "\n")
+    featured["questions"] = used_q
     FEATURED.write_text(json.dumps(featured, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"{len(added)} 本を予約しました。")
 
