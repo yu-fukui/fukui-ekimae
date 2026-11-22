@@ -35,7 +35,8 @@
 |---|---|
 | 毎晩 21:00 | `threads-compose.yml` が翌日 3 枠を `posts/queue.jsonl` に足す |
 | 11:30 | ランチ（駅前・片町のグルメ） |
-| 17:30 | 有料のお店の紹介（PR、30日に1回）。なければ夕方のカフェ・軽く一杯 |
+| 14:30・19:30 | 問いかけ（あるある型。「1軒だけ選ぶなら」型は出さない。統括 11/23） |
+| 16:30 | 有料のお店の紹介（PR、30日に1回）があるときだけ |
 | 20:30 | 夜のお店 |
 | 10分おき | cron-job.org → `repository_dispatch: threads-tick` → `threads-post.yml` が時刻の来た投稿を出す |
 | 毎週月曜 12:00 | `threads-refresh-token.yml` がトークンの期限を延ばし、`GH_PAT` で Secret に書き戻す |

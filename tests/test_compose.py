@@ -18,7 +18,7 @@ class ComposeTest(unittest.TestCase):
         shops = [shop("a", instagram="a_official"), shop("c", genre="カフェ・スイーツ", instagram="c_ig"), shop("b", genre="居酒屋", instagram="b_ig"),
                  shop("d", genre="イタリアン・フレンチ", instagram="d_ig"), shop("n", "night", "バー", instagram="n_bar")]
         items = compose.compose(date(2026, 10, 10), shops, {"seen": [], "pr_last": {}})
-        self.assertEqual([i["scheduled_at"][11:16] for i in items], ["11:30", "14:30", "16:30", "18:30", "20:30"])
+        self.assertEqual([i["scheduled_at"][11:16] for i in items], ["11:30", "14:30", "18:30", "19:30", "20:30"])
         self.assertIn("https://www.instagram.com/a_official/", items[0]["text"])
         self.assertNotIn("@a_official", items[0]["text"])
         self.assertIn("20歳未満", items[-1]["text"])
@@ -27,7 +27,7 @@ class ComposeTest(unittest.TestCase):
         shops = [shop("a", instagram="a_official"), shop("c", genre="カフェ・スイーツ", instagram="c_ig"), shop("b", genre="居酒屋", instagram="b_ig"),
                  shop("d", genre="イタリアン・フレンチ", instagram="d_ig"), shop("n", "night", "バー", instagram="n_bar")]
         items = compose.compose(date(2026, 10, 10), shops, {"seen": [], "pr_last": {}}, manual=2)
-        self.assertEqual([i["scheduled_at"][11:16] for i in items], ["14:30", "18:30", "20:30"])
+        self.assertEqual([i["scheduled_at"][11:16] for i in items], ["14:30", "18:30", "19:30"])
 
     def test_paid_shop_gets_pr_once_per_30_days(self):
         shops = [shop("a", instagram="a_ig"), shop("p", is_paid=True, catch="駅前の老舗"), shop("n", "night", "バー", instagram="n_ig")]
